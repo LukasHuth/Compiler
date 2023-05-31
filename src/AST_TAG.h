@@ -9,7 +9,11 @@ typedef enum {
   AST_DIV,
   AST_EXPR,
   AST_RETURN,
+  AST_BODY,
+  AST_ARGUMENT,
+  AST_FUNCTION,
 } AST_TAG;
 char* get_tag_name(AST_TAG tag);
+int tag_get_priority(AST_TAG tag);
 char get_op(AST_TAG tag);
 #endif

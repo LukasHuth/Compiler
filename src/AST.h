@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 #include "AST_TAG.h"
 
@@ -14,14 +15,44 @@ struct AST {
     struct AST_TUPLE { AST *left; AST *right; } AST_TUPLE;
     struct AST_EXPR { AST *expr; } AST_EXPR;
     struct AST_RETURN { AST *expr; } AST_RETURN;
+    struct AST_BODY { AST* *children; size_t array_size;} AST_BODY;
+    struct AST_ARGUMENT { char* name; AST *type } AST_ARGUMENT;
+    struct AST_FUNCTION { char* name; AST *type; AST *body; AST* *arguments; size_t array_size; } AST_FUNCTION;
+    struct AST_NODE { AST* *children; size_t array_size; } AST_NODE;
+    struct AST_TYPE { char* name; bool is_array; AST* array_size } AST_TYPE;
+    struct AST_VARIABLE { char* name; AST *type; AST *value; } AST_VARIABLE;
+    struct AST_ASSIGN { char* name; AST *value; } AST_ASSIGN;
+    struct AST_IF { AST *condition; AST *body; } AST_IF;
+    struct AST_WHILE { AST *condition; AST *body; } AST_WHILE;
+    struct AST_FOR { AST *init; AST *condition; AST *increment; AST *body; } AST_FOR;
+    struct AST_BREAK { } AST_BREAK;
+    struct AST_CONTINUE { } AST_CONTINUE;
+    struct AST_CALL { char* name; AST* *arguments; size_t array_size; } AST_CALL;
   } data;
 };
 AST *AST_new();
 AST *AST_new_single(AST_TAG tag, AST *expr);
-AST *AST_new_node();
-void AST_add_child(AST* ast, AST* child);
 AST *AST_new_number(int number);
 AST *AST_new_tuple(AST_TAG tag, AST *left, AST *right);
+// from here on, the functions are not written at the moment
+AST *AST_new_node();
+AST *AST_new_expr(AST *expr);
+AST *AST_new_return(AST *expr);
+AST *AST_new_body(AST* *children, size_t array_size);
+AST *AST_new_argument(char* name, AST *type);
+AST *AST_new_function(char* name, AST *type, AST *body, AST* *arguments, size_t array_size);
+AST *AST_new_type(char* name, bool is_array, AST* array_size);
+AST *AST_new_variable(char* name, AST *type, AST *value);
+AST *AST_new_assign(char* name, AST *value);
+AST *AST_new_if(AST *condition, AST *body);
+AST *AST_new_while(AST *condition, AST *body);
+AST *AST_new_for(AST *init, AST *condition, AST *increment, AST *body);
+AST *AST_new_break();
+AST *AST_new_continue();
+AST *AST_new_call(char* name, AST* *arguments, size_t array_size);
+void AST_add_child(AST* ast, AST* child);
+void AST_add_argument(AST* ast, AST* argument);
+// until here
 void AST_free(AST *ast);
 void AST_print(AST *ast);
 #endif

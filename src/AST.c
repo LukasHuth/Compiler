@@ -16,15 +16,21 @@ AST *AST_new_node()
 
 void AST_add_child(AST* ast, AST* child)
 {
-    // not the finished version, this is just a placeholder
-    if (ast->data.AST_EXPR.expr == NULL)
+    if (ast->tag == AST_BODY)
     {
-        ast->data.AST_EXPR.expr = child;
+        ast->data.AST_BODY.array_size++;
+        ast->data.AST_BODY.children = realloc(ast->data.AST_BODY.children, sizeof(AST*) * (ast->data.AST_BODY.array_size));
+        ast->data.AST_BODY.children[ast->data.AST_BODY.array_size - 1] = child;
+        return;
     }
-    else
+    
+    // not finished
+    if (ast->tag == AST_NODE)
     {
-        AST* new_ast = AST_new_tuple(AST_EXPR, ast->data.AST_EXPR.expr, child);
-        ast->data.AST_EXPR.expr = new_ast;
+        ast->data.AST_NODE.array_size++;
+        ast->data.AST_NODE.children = realloc(ast->data.AST_NODE.children, sizeof(AST*) * (ast->data.AST_NODE.array_size));
+        ast->data.AST_NODE.children[ast->data.AST_NODE.array_size - 1] = child;
+        return;
     }
 }
 
