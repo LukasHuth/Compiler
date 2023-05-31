@@ -3,8 +3,9 @@
 LEXER* init_lexer(FILE* file)
 {
     LEXER *lexer = malloc(sizeof(LEXER));
+    lexer->index = 0;
     lexer->file = file;
-    lexer->buffer = calloc(0, sizeof(LEXER_TOKEN));
+    lexer->tokens = calloc(0, sizeof(LEXER_TOKEN));
     lexer->buffer_size = 0;
     return lexer;
 }
@@ -14,19 +15,19 @@ void lexer_print_lexer_token(LEXER_TOKEN *token)
         switch (lexer_token.tag)
         {
         case LEXER_NUMBER:
-            printf("%d", lexer_token.data.LEXER_NUMBER.number);
+            printf("%d", atoi(lexer_token.data));
             break;
         case LEXER_KEYWORD:
-            printf("%s (keyword)", lexer_token.data.LEXER_KEYWORD.keyword);
+            printf("%s (keyword)", lexer_token.data);
             break;
         case LEXER_IDENTIFIER:
-            printf("%s (identifier)", lexer_token.data.LEXER_IDENTIFIER.identifier);
+            printf("%s (identifier)", lexer_token.data);
             break;
         case LEXER_EOF:
             printf("EOF");
             break;
         default:
-            printf("%s", lexer_token.data.LEXER_DATA.data);
+            printf("%s", lexer_token.data);
             break;
         }
         printf("\n");
@@ -35,12 +36,12 @@ void lexer_print(LEXER *lexer)
 {
     for (size_t i = 0; i < lexer->buffer_size; i++)
     {
-        lexer_print_lexer_token(&lexer->buffer[i]);
+        lexer_print_lexer_token(lexer->tokens[i]);
     }
 }
 void lexer_free(LEXER *lexer)
 {
-    free(lexer->buffer);
+    free(lexer->tokens);
     free(lexer);
 }
 void lex(LEXER *lexer)

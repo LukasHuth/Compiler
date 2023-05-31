@@ -28,17 +28,13 @@ enum LEXER_TAG {
 typedef struct LEXER_TOKEN LEXER_TOKEN;
 struct LEXER_TOKEN {
     LEXER_TAG tag;
-    union {
-        struct LEXER_NUMBER { int number; } LEXER_NUMBER;
-        struct LEXER_KEYWORD { char* keyword; } LEXER_KEYWORD;
-        struct LEXER_IDENTIFIER { char* identifier; } LEXER_IDENTIFIER;
-        struct LEXER_DATA { char* data; } LEXER_DATA;
-    } data;
+    char* data;
 };
 typedef struct LEXER LEXER;
 struct LEXER {
+    size_t index;
     FILE *file;
-    LEXER_TOKEN* buffer;
+    LEXER_TOKEN** tokens;
     size_t buffer_size;
 };
 LEXER* init_lexer(FILE* file);

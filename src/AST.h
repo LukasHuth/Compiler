@@ -18,6 +18,8 @@ struct AST {
 };
 AST *AST_new();
 AST *AST_new_single(AST_TAG tag, AST *expr);
+AST *AST_new_node();
+void AST_add_child(AST* ast, AST* child);
 AST *AST_new_number(int number);
 AST *AST_new_tuple(AST_TAG tag, AST *left, AST *right);
 void AST_free(AST *ast);

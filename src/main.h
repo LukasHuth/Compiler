@@ -5,4 +5,5 @@
 #include <string.h>
 #include "AST.h"
 #include "lexer.h"
+#include "parser.h"
 #endif

@@ -22,6 +22,10 @@ int main()
     LEXER *lexer = init_lexer(file);
     lex(lexer);
     lexer_print(lexer);
+    ast = parse(lexer);
+    AST_print(ast);
+    AST_free(ast);
     lexer_free(lexer);
+    fclose(file);
     return 0;
 }

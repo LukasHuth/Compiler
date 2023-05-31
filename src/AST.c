@@ -7,6 +7,27 @@ AST *AST_new(AST ast)
     return ptr;
 }
 
+AST *AST_new_node()
+{
+    // not the finished version, this is just a placeholder
+    AST ast = { .tag = AST_EXPR, .data = { .AST_EXPR = { .expr = NULL } } };
+    return AST_new(ast);
+}
+
+void AST_add_child(AST* ast, AST* child)
+{
+    // not the finished version, this is just a placeholder
+    if (ast->data.AST_EXPR.expr == NULL)
+    {
+        ast->data.AST_EXPR.expr = child;
+    }
+    else
+    {
+        AST* new_ast = AST_new_tuple(AST_EXPR, ast->data.AST_EXPR.expr, child);
+        ast->data.AST_EXPR.expr = new_ast;
+    }
+}
+
 AST *AST_new_single(AST_TAG tag, AST *expr)
 {
     AST ast = { .tag = tag, .data = { .AST_EXPR = { .expr = expr } } };
