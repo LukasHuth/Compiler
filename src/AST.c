@@ -1,8 +1,5 @@
 #include "AST.h"
 
-char get_op(AST_TAG tag);
-char* get_tag_name(AST_TAG tag);
-
 AST *AST_new(AST ast)
 {
     AST *ptr = malloc(sizeof(AST));
@@ -56,23 +53,6 @@ void AST_print(AST *ast)
         break;
     }
 }
-char get_op(AST_TAG tag)
-{
-    switch (tag)
-    {
-    case AST_ADD:
-        return '+';
-    case AST_SUB:
-        return '-';
-    case AST_DIV:
-        return '/';
-    case AST_MUL:
-        return '*';
-    default:
-        printf("AST(get_op): Error: Unknown tag\n");
-        return '?';
-    }
-}
 void AST_free(AST *ast)
 {
     switch (ast->tag)
@@ -97,23 +77,4 @@ void AST_free(AST *ast)
         break;
     }
     free(ast);
-}
-char* get_tag_name(AST_TAG tag)
-{
-    switch (tag)
-    {
-    case AST_NUMBER:
-        return "AST_NUMBER";
-    case AST_ADD:
-        return "AST_ADD";
-    case AST_SUB:
-        return "AST_SUB";
-    case AST_DIV:
-        return "AST_DIV";
-    case AST_MUL:
-        return "AST_MUL";
-    default:
-        printf("AST(get_tag_name): Error: Unknown tag\n");
-        return "?";
-    }
 }
