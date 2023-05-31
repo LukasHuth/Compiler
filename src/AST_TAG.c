@@ -17,12 +17,30 @@ char* get_tag_name(AST_TAG tag)
         return "AST_EXPR";
     case AST_RETURN:
         return "AST_RETURN";
-    case AST_BODY:
-        return "AST_BODY";
     case AST_ARGUMENT:
         return "AST_ARGUMENT";
     case AST_FUNCTION:
         return "AST_FUNCTION";
+    case AST_NODE:
+        return "AST_NODE";
+    case AST_TYPE:
+        return "AST_TYPE";
+    case AST_DECLARATION:
+        return "AST_DECLARATION";
+    case AST_ASSIGN:
+        return "AST_ASSIGN";
+    case AST_IF:
+        return "AST_IF";
+    case AST_WHILE:
+        return "AST_WHILE";
+    case AST_FOR:
+        return "AST_FOR";
+    case AST_BREAK:
+        return "AST_BREAK";
+    case AST_CONTINUE:
+        return "AST_CONTINUE";
+    case AST_CALL:
+        return "AST_CALL";
     default:
         printf("AST(get_tag_name): Error: Unknown tag\n");
         return "?";

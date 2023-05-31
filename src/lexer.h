@@ -23,6 +23,8 @@ enum LEXER_TAG {
     LEXER_ARROW,
     LEXER_OPEN_BRACE,
     LEXER_CLOSE_BRACE,
+    LEXER_OPEN_BRACKET,
+    LEXER_CLOSE_BRACKET,
     LEXER_EOF,
 };
 typedef struct LEXER_TOKEN LEXER_TOKEN;
@@ -41,4 +43,5 @@ LEXER* init_lexer(FILE* file);
 void lex(LEXER *lexer);
 void lexer_print(LEXER *lexer);
 void lexer_free(LEXER *lexer);
+char *LEXER_TAG_to_string(LEXER_TAG tag);
 #endif

@@ -113,6 +113,12 @@ void lex(LEXER *lexer)
         case '}':
             tag = LEXER_CLOSE_BRACE;
             break;
+        case '[':
+            tag = LEXER_OPEN_BRACKET;
+            break;
+        case ']':
+            tag = LEXER_CLOSE_BRACKET;
+            break;
         default:
         {
             if (isdigit(c))
@@ -158,5 +164,56 @@ void lex(LEXER *lexer)
         {
             lexer_add_lexer_token(lexer, lexer_new_token(tag, str));
         }
+    }
+}
+char* LEXER_TAG_to_string(LEXER_TAG tag)
+{
+    switch (tag)
+    {
+    case LEXER_NUMBER:
+        return "LEXER_NUMBER";
+    case LEXER_PLUS:
+        return "LEXER_PLUS";
+    case LEXER_MINUS:
+        return "LEXER_MINUS";
+    case LEXER_STAR:
+        return "LEXER_STAR";
+    case LEXER_SLASH:    
+        return "LEXER_SLASH";
+    case LEXER_OPEN_PAREN:
+        return "LEXER_OPEN_PAREN";
+    case LEXER_CLOSE_PAREN:
+        return "LEXER_CLOSE_PAREN";
+    case LEXER_KEYWORD:
+        return "LEXER_KEYWORD";
+    case LEXER_IDENTIFIER:
+        return "LEXER_IDENTIFIER";
+    case LEXER_SEMICOLON:
+        return "LEXER_SEMICOLON";
+    case LEXER_EQUALS:
+        return "LEXER_EQUALS";
+    case LEXER_COMMA:
+        return "LEXER_COMMA";
+    case LEXER_COLON:
+        return "LEXER_COLON";
+    case LEXER_LESS:
+        return "LEXER_LESS";
+    case LEXER_GREATER:
+        return "LEXER_GREATER";
+    case LEXER_ARROW:
+        return "LEXER_ARROW";
+    case LEXER_OPEN_BRACE:
+        return "LEXER_OPEN_BRACE";
+    case LEXER_CLOSE_BRACE:
+        return "LEXER_CLOSE_BRACE";
+    case LEXER_OPEN_BRACKET:
+        return "LEXER_OPEN_BRACKET";
+    case LEXER_CLOSE_BRACKET:
+        return "LEXER_CLOSE_BRACKET";
+    case LEXER_EOF:
+        return "LEXER_EOF";
+    default:
+        printf("Error: Unknown tag\n");
+        exit(1);
     }
 }
