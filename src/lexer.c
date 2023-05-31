@@ -67,27 +67,8 @@ void lexer_print(LEXER *lexer)
         lexer_print_lexer_token(&lexer->buffer[i]);
     }
 }
-void lexer_token_free(LEXER_TOKEN *token) {
-    LEXER_TOKEN lexer_token = *token;
-    switch (lexer_token.tag)
-    {
-    case LEXER_KEYWORD:
-        free(lexer_token.data.LEXER_KEYWORD.keyword);
-        break;
-    case LEXER_IDENTIFIER:
-        free(lexer_token.data.LEXER_IDENTIFIER.identifier);
-        break;
-    default:
-        break;
-    }
-    free(token);
-}
 void lexer_free(LEXER *lexer)
 {
-    for(size_t i = 0; i < lexer->buffer_size; i++)
-    {
-        lexer_token_free(&lexer->buffer[i]);
-    }
     free(lexer->buffer);
     free(lexer);
 }
