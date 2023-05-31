@@ -2,8 +2,6 @@
 #define H_LEXER
 #include <string.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
 #include <ctype.h>
 typedef enum LEXER_TAG LEXER_TAG;
 enum LEXER_TAG {
