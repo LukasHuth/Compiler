@@ -6,4 +6,5 @@
 #include "AST.h"
 #include "lexer.h"
 #include "parser.h"
+#include "syntatic_analysis.h"
 #endif

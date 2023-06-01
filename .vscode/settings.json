@@ -3,7 +3,8 @@
         "*.ejs": "html",
         "ast.h": "c",
         "lexer.h": "c",
-        "main.h": "c"
+        "main.h": "c",
+        "syntatic_analysis.h": "c"
     },
     "C_Cpp.default.configurationProvider": "ms-vscode.makefile-tools"
 }
