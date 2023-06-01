@@ -107,6 +107,11 @@ AST *AST_new_call(char* name, AST* *arguments, size_t array_size)
     AST ast = { .tag = AST_CALL, .data = { .AST_CALL = { .name = name, .arguments = arguments, .array_size = array_size } } };
     return AST_new(ast);
 }
+AST *AST_new_variable(char* name)
+{
+    AST ast = { .tag = AST_VARIABLE, .data = { .AST_VARIABLE = { .name = name } } };
+    return AST_new(ast);
+}
 
 AST *AST_new_single(AST_TAG tag, AST *expr)
 {
@@ -149,8 +154,98 @@ void AST_print(AST *ast)
         printf("return ");
         AST_print(ast->data.AST_RETURN.expr);
         break;
+    case AST_ARGUMENT:
+        AST_print(ast->data.AST_ARGUMENT.type);
+        printf(" %s", ast->data.AST_ARGUMENT.name);
+        break;
+    case AST_FUNCTION:
+        AST_print(ast->data.AST_FUNCTION.type);
+        printf(" %s(", ast->data.AST_FUNCTION.name);
+        for (size_t i = 0; i < ast->data.AST_FUNCTION.array_size; i++)
+        {
+            AST_print(ast->data.AST_FUNCTION.arguments[i]);
+            if (i != ast->data.AST_FUNCTION.array_size - 1)
+            {
+                printf(", ");
+            }
+        }
+        printf(") {\n");
+        AST_print(ast->data.AST_FUNCTION.body);
+        printf("}\n");
+        break;
+    case AST_NODE:
+        for (size_t i = 0; i < ast->data.AST_NODE.array_size; i++)
+        {
+            AST_print(ast->data.AST_NODE.children[i]);
+            printf("\n");
+        }
+        break;
+    case AST_TYPE:
+        printf("%s", ast->data.AST_TYPE.name);
+        if (ast->data.AST_TYPE.is_array)
+        {
+            printf("[");
+            AST_print(ast->data.AST_TYPE.array_size);
+            printf("]");
+        }
+        break;
+    case AST_DECLARATION:
+        AST_print(ast->data.AST_DECLARATION.type);
+        printf(" %s = ", ast->data.AST_DECLARATION.name);
+        AST_print(ast->data.AST_DECLARATION.value);
+        break;
+    case AST_ASSIGN:
+        printf("%s = ", ast->data.AST_ASSIGN.name);
+        AST_print(ast->data.AST_ASSIGN.value);
+        break;
+    case AST_IF:
+        printf("if (");
+        AST_print(ast->data.AST_IF.condition);
+        printf(") {\n");
+        AST_print(ast->data.AST_IF.body);
+        printf("}\n");
+        break;
+    case AST_WHILE:
+        printf("while (");
+        AST_print(ast->data.AST_WHILE.condition);
+        printf(") {\n");
+        AST_print(ast->data.AST_WHILE.body);
+        printf("}\n");
+        break;
+    case AST_FOR:
+        printf("for (");
+        AST_print(ast->data.AST_FOR.init);
+        printf("; ");
+        AST_print(ast->data.AST_FOR.condition);
+        printf("; ");
+        AST_print(ast->data.AST_FOR.increment);
+        printf(") {\n");
+        AST_print(ast->data.AST_FOR.body);
+        printf("}\n");
+        break;
+    case AST_BREAK:
+        printf("break");
+        break;
+    case AST_CONTINUE:
+        printf("continue");
+        break;
+    case AST_CALL:
+        printf("%s(", ast->data.AST_CALL.name);
+        for (size_t i = 0; i < ast->data.AST_CALL.array_size; i++)
+        {
+            AST_print(ast->data.AST_CALL.arguments[i]);
+            if (i != ast->data.AST_CALL.array_size - 1)
+            {
+                printf(", ");
+            }
+        }
+        printf(")");
+        break;
+    case AST_VARIABLE:
+        printf("%s", ast->data.AST_VARIABLE.name);
+        break;
     default:
-        printf("AST(print): Error: Unknown tag\n");
+        printf("AST(print): Error: Unknown tag (%s)\n", get_tag_name(ast->tag));
         break;
     }
 }

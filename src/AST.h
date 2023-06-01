@@ -27,6 +27,7 @@ struct AST {
     struct AST_BREAK { } AST_BREAK;
     struct AST_CONTINUE { } AST_CONTINUE;
     struct AST_CALL { char* name; AST* *arguments; size_t array_size; } AST_CALL;
+    struct AST_VARIABLE { char* name; } AST_VARIABLE;
   } data;
 };
 AST *AST_new();
@@ -48,6 +49,7 @@ AST *AST_new_for(AST *init, AST *condition, AST *increment, AST *body);
 AST *AST_new_break();
 AST *AST_new_continue();
 AST *AST_new_call(char* name, AST* *arguments, size_t array_size);
+AST *AST_new_variable(char* name);
 void AST_add_argument(AST* ast, AST* argument);
 void AST_add_child(AST* ast, AST* child);
 // until here

@@ -9,6 +9,12 @@ AST *parse_term(LEXER *lexer);
 AST *parse_factor(LEXER *lexer);
 AST *parse_call(LEXER *lexer, char *name);
 AST *parse_func(LEXER *lexer);
+AST *parse_declaration(LEXER *lexer, char* name);
+AST *parse_assignment(LEXER *lexer, char *name);
+AST *parse_for(LEXER *lexer);
+AST *parse_while(LEXER *lexer);
+AST *parse_if(LEXER *lexer);
+AST *parse_return(LEXER *lexer);
 
 AST* parse(LEXER* lexer)
 {
@@ -86,10 +92,7 @@ AST *parse_expr(LEXER *lexer)
         char* name = eat(lexer, LEXER_IDENTIFIER)->data;
         if(peek(lexer) == LEXER_EQUALS)
         {
-            eat(lexer, LEXER_EQUALS);
-            AST* value = parse_term(lexer);
-            eat(lexer, LEXER_SEMICOLON);
-            return AST_new_assign(name, value);
+            return parse_assignment(lexer, name);
         }
         if(peek(lexer) == LEXER_OPEN_PAREN)
         {
@@ -97,16 +100,7 @@ AST *parse_expr(LEXER *lexer)
         }
         if(peek(lexer) == LEXER_COLON)
         {
-            eat(lexer, LEXER_COLON);
-            AST* type = parse_type(lexer);
-            if(peek(lexer) == LEXER_EQUALS)
-            {
-                eat(lexer, LEXER_EQUALS);
-                AST* value = parse_term(lexer);
-                eat(lexer, LEXER_SEMICOLON);
-                return AST_new_declaration(name, type, value);
-            }
-            return AST_new_declaration(name, type, AST_new_number(0));
+            return parse_declaration(lexer, name);
         }
         if(peek(lexer) == LEXER_OPEN_BRACKET)
         {
@@ -122,11 +116,157 @@ AST *parse_expr(LEXER *lexer)
         // TODO: Implement index assignment and add support for -=, +=, *=, /=, etc.
         printf("Parser(parse_expr): Error: Unexpected token %s\n", LEXER_TAG_to_string(peek(lexer)));
     }
+    if(peek(lexer) == LEXER_KEYWORD)
+    {
+        char* name = eat(lexer, LEXER_KEYWORD)->data;
+        if(strcmp(name, "return") == 0)
+        {
+            return parse_return(lexer);
+        }
+        if(strcmp(name, "if") == 0)
+        {
+            return parse_if(lexer);
+        }
+        if(strcmp(name, "while") == 0)
+        {
+            return parse_while(lexer);
+        }
+        if(strcmp(name, "for") == 0)
+        {
+            return parse_for(lexer);
+        }
+        if(strcmp(name, "break") == 0)
+        {
+            eat(lexer, LEXER_SEMICOLON);
+            return AST_new_break();
+        }
+        if(strcmp(name, "continue") == 0)
+        {
+            eat(lexer, LEXER_SEMICOLON);
+            return AST_new_continue();
+        }
+        if(strcmp(name, "import") == 0)
+        {
+            printf("Parser(parse_expr): Error: Import not implemented\n");
+            exit(2);
+            // TODO: Implement import
+            // char* path = eat(lexer, LEXER_STRING)->data;
+            // eat(lexer, LEXER_SEMICOLON);
+            // return AST_new_import(path);
+        }
+        if(strcmp(name, "struct") == 0)
+        {
+            printf("Parser(parse_expr): Error: Struct not implemented\n");
+            exit(2);
+            /*
+            char* name = eat(lexer, LEXER_IDENTIFIER)->data;
+            eat(lexer, LEXER_OPEN_BRACE);
+            AST** members = calloc(sizeof(AST*), 0);
+            size_t array_size = 0;
+            while (peek(lexer) != LEXER_CLOSE_BRACE)
+            {
+                AST* member = parse_declaration(lexer, NULL);
+                members = realloc(members, sizeof(AST*) * (array_size + 1));
+                members[array_size] = member;
+                array_size++;
+            }
+            eat(lexer, LEXER_CLOSE_BRACE);
+            eat(lexer, LEXER_SEMICOLON);
+            return AST_new_struct(name, members, array_size);
+            */
+        }
+        if(strcmp(name, "enum") == 0)
+        {
+            printf("Parser(parse_expr): Error: Enum not implemented\n");
+            exit(2);
+            /*
+            char* name = eat(lexer, LEXER_IDENTIFIER)->data;
+            eat(lexer, LEXER_OPEN_BRACE);
+            char** members = calloc(sizeof(char*), 0);
+            size_t array_size = 0;
+            while (peek(lexer) != LEXER_CLOSE_BRACE)
+            {
+                char* name = eat(lexer, LEXER_IDENTIFIER)->data;
+                eat(lexer, LEXER_COMMA);
+                members = realloc(members, sizeof(char*) * (array_size + 1));
+                members[array_size] = member;
+                array_size++;
+            }
+            eat(lexer, LEXER_CLOSE_BRACE);
+            eat(lexer, LEXER_SEMICOLON);
+            return AST_new_enum(name, members, array_size);
+            */
+        }
+    }
     while(peek(lexer) != LEXER_SEMICOLON)
     {
         eat(lexer, peek(lexer));
     }
     eat(lexer, LEXER_SEMICOLON);
+}
+
+AST *parse_for(LEXER *lexer)
+{
+    printf("Parser(parse_for): Error: For not implemented\n");
+    exit(2);
+    /*
+    eat(lexer, LEXER_OPEN_PAREN);
+    AST* init = parse_expr(lexer);
+    AST* condition = parse_term(lexer);
+    eat(lexer, LEXER_SEMICOLON);
+    AST* update = parse_expr(lexer);
+    eat(lexer, LEXER_CLOSE_PAREN);
+    AST* body = parse_body(lexer);
+    return AST_new_for(init, condition, update, body);
+    */
+}
+
+AST *parse_while(LEXER *lexer)
+{
+    eat(lexer, LEXER_OPEN_PAREN);
+    AST *condition = parse_term(lexer);
+    eat(lexer, LEXER_CLOSE_PAREN);
+    AST *body = parse_body(lexer);
+    return AST_new_while(condition, body);
+}
+
+AST *parse_if(LEXER *lexer)
+{
+    eat(lexer, LEXER_OPEN_PAREN);
+    AST *condition = parse_term(lexer);
+    eat(lexer, LEXER_CLOSE_PAREN);
+    AST *body = parse_body(lexer);
+    return AST_new_if(condition, body);
+}
+
+AST *parse_return(LEXER *lexer)
+{
+    AST* value = parse_term(lexer);
+    // AST_print(value);
+    eat(lexer, LEXER_SEMICOLON);
+    return AST_new_return(value);
+}
+
+AST *parse_declaration(LEXER *lexer, char* name)
+{
+    eat(lexer, LEXER_COLON);
+    AST* type = parse_type(lexer);
+    if(peek(lexer) == LEXER_EQUALS)
+    {
+        eat(lexer, LEXER_EQUALS);
+        AST* value = parse_term(lexer);
+        eat(lexer, LEXER_SEMICOLON);
+        return AST_new_declaration(name, type, value);
+    }
+    return AST_new_declaration(name, type, AST_new_number(0));
+}
+
+AST *parse_assignment(LEXER *lexer, char *name)
+{
+    eat(lexer, LEXER_EQUALS);
+    AST *value = parse_term(lexer);
+    eat(lexer, LEXER_SEMICOLON);
+    return AST_new_assign(name, value);
 }
 
 AST *parse_argument(LEXER *lexer)
@@ -185,7 +325,6 @@ AST *parse_factor(LEXER *lexer)
         eat(lexer, LEXER_OPEN_PAREN);
         AST *expr = parse_term(lexer);
         eat(lexer, LEXER_CLOSE_PAREN);
-        eat(lexer, LEXER_SEMICOLON);
         return expr;
     }
     if (peek(lexer) == LEXER_IDENTIFIER)
@@ -195,8 +334,7 @@ AST *parse_factor(LEXER *lexer)
         {
             return parse_call(lexer, name);
         }
-        eat(lexer, LEXER_SEMICOLON);
-        return AST_new_declaration(name, NULL, NULL);
+        return AST_new_variable(name);
     }
     printf("Parser(parse_factor): Error: Unexpected token %s\n", LEXER_TAG_to_string(peek(lexer)));
     exit(1);

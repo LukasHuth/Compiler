@@ -21,6 +21,7 @@ typedef enum {
   AST_FUNCTION,
   AST_CALL,
   AST_NODE,
+  AST_VARIABLE,
 } AST_TAG;
 char* get_tag_name(AST_TAG tag);
 int tag_get_priority(AST_TAG tag);
