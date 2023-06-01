@@ -10,7 +10,7 @@
 typedef struct AST AST;
 struct AST {
   AST_TAG tag;
-  union {
+  union data {
     struct AST_NUMBER { int number; } AST_NUMBER;
     struct AST_TUPLE { AST *left; AST *right; } AST_TUPLE;
     struct AST_EXPR { AST *expr; } AST_EXPR;
@@ -24,8 +24,6 @@ struct AST {
     struct AST_IF { AST *condition; AST *body; } AST_IF;
     struct AST_WHILE { AST *condition; AST *body; } AST_WHILE;
     struct AST_FOR { AST *init; AST *condition; AST *increment; AST *body; } AST_FOR;
-    struct AST_BREAK { } AST_BREAK;
-    struct AST_CONTINUE { } AST_CONTINUE;
     struct AST_CALL { char* name; AST* *arguments; size_t array_size; } AST_CALL;
     struct AST_VARIABLE { char* name; } AST_VARIABLE;
   } data;
@@ -47,6 +45,7 @@ AST *AST_new_if(AST *condition, AST *body);
 AST *AST_new_while(AST *condition, AST *body);
 AST *AST_new_for(AST *init, AST *condition, AST *increment, AST *body);
 AST *AST_new_break();
+AST *AST_new_noop();
 AST *AST_new_continue();
 AST *AST_new_call(char* name, AST* *arguments, size_t array_size);
 AST *AST_new_variable(char* name);

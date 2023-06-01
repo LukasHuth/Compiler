@@ -96,12 +96,18 @@ AST *AST_new_for(AST *init, AST *condition, AST *increment, AST *body)
 }
 AST *AST_new_break()
 {
-    AST ast = { .tag = AST_BREAK, .data = { .AST_BREAK = { } } };
+    AST ast = { .tag = AST_BREAK };
+    return AST_new(ast);
+}
+AST *AST_new_noop()
+{
+    AST ast = { .tag = AST_NOOP };
     return AST_new(ast);
 }
 AST *AST_new_continue()
 {
-    AST ast = { .tag = AST_CONTINUE, .data = { .AST_CONTINUE = { } } };
+    // AST ast = { .tag = AST_CONTINUE, .data = { .AST_CONTINUE = { } } };
+    AST ast = { .tag = AST_CONTINUE };
     return AST_new(ast);
 }
 AST *AST_new_call(char* name, AST* *arguments, size_t array_size)
@@ -253,6 +259,7 @@ void AST_print(AST *ast)
 }
 void AST_free(AST *ast)
 {
+    // still need to free something that i can't find (but its only 68 bytes by 34 leaks, so it should be fixable)
     switch (ast->tag)
     {
     case AST_RETURN:
@@ -260,9 +267,11 @@ void AST_free(AST *ast)
         if(DEBUG) printf("free return\n");
         break;
     case AST_NODE:
+        if(DEBUG) printf("count: %ld\n", ast->data.AST_NODE.array_size);
         for (size_t i = 0; i < ast->data.AST_NODE.array_size; i++)
         {
             AST_free(ast->data.AST_NODE.children[i]);
+            // free(ast->data.AST_NODE.children[i]);
         }
         free(ast->data.AST_NODE.children);
         if(DEBUG) printf("free node\n");
@@ -294,6 +303,7 @@ void AST_free(AST *ast)
         break;
     case AST_DECLARATION:
         AST_free(ast->data.AST_DECLARATION.type);
+        printf("free declaration type (%s)\n", get_tag_name(ast->data.AST_DECLARATION.value->tag));
         AST_free(ast->data.AST_DECLARATION.value);
         if(DEBUG) printf("free declaration\n");
         break;
@@ -317,6 +327,19 @@ void AST_free(AST *ast)
         AST_free(ast->data.AST_FOR.increment);
         AST_free(ast->data.AST_FOR.body);
         if(DEBUG) printf("free for\n");
+        break;
+    case AST_ADD:
+    case AST_SUB:
+    case AST_MUL:
+    case AST_DIV:
+        AST_free(ast->data.AST_TUPLE.left);
+        AST_free(ast->data.AST_TUPLE.right);
+        if(DEBUG) printf("free tuple\n");
+        break;
+    case AST_EXPR:
+        if(DEBUG) printf("free expr(%s)\n", get_tag_name(ast->data.AST_EXPR.expr->tag));
+        AST_free(ast->data.AST_EXPR.expr);
+        if(DEBUG) printf("free expr\n");
         break;
     default:
         break;

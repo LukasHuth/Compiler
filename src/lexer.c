@@ -54,9 +54,8 @@ void lex(LEXER *lexer)
     while (!is_eof(lexer->file))
     {
         char c = get_char(lexer->file);
-        char* str = malloc(sizeof(char) * 2);
+        char* str = calloc(2, sizeof(char));
         str[0] = c;
-        str[1] = '\0';
         size_t str_size = 2;
         LEXER_TAG tag = LEXER_EOF;
         switch (c)
@@ -169,6 +168,8 @@ void lex(LEXER *lexer)
         {
             lexer_add_lexer_token(lexer, lexer_new_token(tag, str));
         }
+        free(str);
+
     }
 }
 char* LEXER_TAG_to_string(LEXER_TAG tag)

@@ -31,7 +31,8 @@ LEXER_TOKEN* lexer_new_token(LEXER_TAG tag, char* data)
 {
     LEXER_TOKEN* lexer_token = malloc(sizeof(LEXER_TOKEN));
     lexer_token->tag = tag;
-    lexer_token->data = data;
+    lexer_token->data = calloc(strlen(data) + 1, sizeof(char));
+    strcpy(lexer_token->data, data);
     return lexer_token;
 }
 

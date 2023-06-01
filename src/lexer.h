@@ -3,8 +3,9 @@
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
-typedef enum LEXER_TAG LEXER_TAG;
-enum LEXER_TAG {
+#define LEXER_TAG enum LEXER_TAG
+// typedef enum LEXER_TAG LEXER_TAG;
+LEXER_TAG {
     LEXER_NUMBER,
     LEXER_PLUS,
     LEXER_MINUS,

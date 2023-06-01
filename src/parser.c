@@ -104,11 +104,11 @@ AST *parse_expr(LEXER *lexer)
         }
         if(peek(lexer) == LEXER_OPEN_BRACKET)
         {
-            eat(lexer, LEXER_OPEN_BRACKET);
-            AST* index = parse_term(lexer);
-            eat(lexer, LEXER_CLOSE_BRACKET);
-            eat(lexer, LEXER_EQUALS);
-            AST* value = parse_term(lexer);
+            // eat(lexer, LEXER_OPEN_BRACKET);
+            // AST* index = parse_term(lexer);
+            // eat(lexer, LEXER_CLOSE_BRACKET);
+            // eat(lexer, LEXER_EQUALS);
+            // AST* value = parse_term(lexer);
             // return AST_new_index_assign(name, index, value);
             printf("Parser(parse_expr): Error: Index assignment not implemented\n");
             exit(2);
@@ -203,10 +203,12 @@ AST *parse_expr(LEXER *lexer)
         eat(lexer, peek(lexer));
     }
     eat(lexer, LEXER_SEMICOLON);
+    return AST_new_noop();
 }
 
 AST *parse_for(LEXER *lexer)
 {
+    lexer->index = lexer->index;
     printf("Parser(parse_for): Error: For not implemented\n");
     exit(2);
     /*
