@@ -3,7 +3,7 @@ out_dir = out
 src_dir = src
 
 CC=gcc
-CFLAGS=-I.
+CFLAGS=-I. -Wall -Wextra -Werror -Wpedantic -std=c99 -g -O3 -lm
 DEPS = $(wildcard $(src_dir)/*.h)
 SOURCE = $(wildcard $(src_dir)/*.c)
 OBJ_temp = $(SOURCE:.c=.o)
