@@ -41,6 +41,11 @@ void lexer_print(LEXER *lexer)
 }
 void lexer_free(LEXER *lexer)
 {
+    for (size_t i = 0; i < lexer->buffer_size; i++)
+    {
+        free(lexer->tokens[i]->data);
+        free(lexer->tokens[i]);
+    }
     free(lexer->tokens);
     free(lexer);
 }
