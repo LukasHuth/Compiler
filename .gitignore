@@ -2,5 +2,7 @@ out/
 *.exe
 *.txt
 *.o
+*.ll
+output
 main
 DrMemory-*

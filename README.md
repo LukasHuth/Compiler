@@ -5,8 +5,8 @@
 ## compilation of .ll file
 
 ```
-llc -filetype=obj out.ll -o out.o
-clang out.o -o out
+llc -filetype=obj output.ll -o output.o
+clang output.o -o output
 ```
 
 ## the basic syntax will be:

@@ -7,4 +7,5 @@
 #include "lexer.h"
 #include "parser.h"
 #include "syntatic_analysis.h"
+#include "codegen.h"
 #endif

@@ -193,7 +193,7 @@ void generate_binary_expression(FILE *file, AST *ast)
         break;
     }
     fprintf(file, "%s i32 ", op);
-    free(op);
+    // free(op);
     generate_expression(file, ast->data.AST_TUPLE.left);
     fprintf(file, ", ");
     generate_expression(file, ast->data.AST_TUPLE.right);
