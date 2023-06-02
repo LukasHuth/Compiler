@@ -1,4 +1,4 @@
-#include "syntatic_analysis.h"
+#include "headers/syntatic_analysis.h"
 
 #define STATE SYNTATIC_ANALYSIS_STATE
 

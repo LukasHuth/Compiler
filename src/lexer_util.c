@@ -1,4 +1,4 @@
-#include "lexer_util.h"
+#include "headers/lexer_util.h"
 
 char get_char(FILE* file)
 {

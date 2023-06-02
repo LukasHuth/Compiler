@@ -1,4 +1,4 @@
-#include "parser.h"
+#include "headers/parser.h"
 
 AST *parse_call(LEXER *lexer, char *name);
 AST *parse_body(LEXER *lexer);

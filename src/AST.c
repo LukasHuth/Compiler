@@ -1,4 +1,4 @@
-#include "AST.h"
+#include "headers/AST.h"
 
 const bool DEBUG = false;
 

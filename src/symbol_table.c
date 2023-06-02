@@ -1,4 +1,4 @@
-#include "symbol_table.h"
+#include "headers/symbol_table.h"
 
 void variable_array_add_variable(VARIABLE_ARRAY *array, VARIABLE *variable)
 {

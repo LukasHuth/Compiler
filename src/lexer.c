@@ -1,5 +1,5 @@
-#include "lexer.h"
-#include "lexer_util.h"
+#include "headers/lexer.h"
+#include "headers/lexer_util.h"
 LEXER* init_lexer(FILE* file)
 {
     LEXER *lexer = malloc(sizeof(LEXER));
