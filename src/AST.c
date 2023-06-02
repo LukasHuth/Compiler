@@ -1,6 +1,6 @@
 #include "AST.h"
 
-const bool DEBUG = true;
+const bool DEBUG = false;
 
 AST *AST_new(AST ast)
 {

@@ -12,6 +12,8 @@ typedef struct {
     bool returned;
 } SYNTATIC_ANALYSIS_STATE;
 
+#include "symbol_table.h"
+
 void syntatic_analysis(AST *node);
 
 #endif

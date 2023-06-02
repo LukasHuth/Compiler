@@ -2,11 +2,20 @@
 
 #define STATE SYNTATIC_ANALYSIS_STATE
 
-void syntatic_analysis_children(AST *ast);
-void syntatic_analysis_function(AST *ast, STATE *state);
-void syntatic_analysis_body(AST *ast, STATE *state);
-void syntatic_analysis_while(AST *ast, STATE *state);
-void syntatic_analysis_if(AST *ast, STATE *state);
+void syntatic_analysis_children(AST *ast, SYMBOL_TABLE *table);
+void syntatic_analysis_function(AST *ast, STATE *state, VARIABLE_ARRAY *variables);
+void syntatic_analysis_body(AST *ast, STATE *state, VARIABLE_ARRAY *variables);
+void syntatic_analysis_while(AST *ast, STATE *state, VARIABLE_ARRAY *variables);
+void syntatic_analysis_if(AST *ast, STATE *state, VARIABLE_ARRAY *variables);
+
+void variable_array_add_variable(VARIABLE_ARRAY *array, VARIABLE *variable);
+VARIABLE *variable_array_get_variable(VARIABLE_ARRAY *array, char *name);
+bool variable_array_has_variable(VARIABLE_ARRAY *array, char *name);
+VARIABLE_ARRAY *create_variable_array();
+VARIABLE *create_variable(AST *type, char *name);
+void free_variable(VARIABLE *variable);
+void free_variable_array(VARIABLE_ARRAY *array);
+bool has_same_type(AST *value, AST *type);
 
 void syntatic_analysis(AST *node)
 {
@@ -17,10 +26,12 @@ void syntatic_analysis(AST *node)
         printf("ERROR: node is not a AST_NODE\n");
         exit(10); // ERROR CODE 10
     }
+    SYMBOL_TABLE *table = create_symbol_table();
     for(size_t i = 0; i < node->data.AST_NODE.array_size; i++)
-        syntatic_analysis_children(node->data.AST_NODE.children[i]);
+        syntatic_analysis_children(node->data.AST_NODE.children[i], table);
+    free_symbol_table(table);
 }
-void syntatic_analysis_children(AST *ast)
+void syntatic_analysis_children(AST *ast, SYMBOL_TABLE *table)
 {
     if(ast == NULL)
         return;
@@ -38,10 +49,16 @@ void syntatic_analysis_children(AST *ast)
     state->forcount = 0;
     state->ifcount = 0;
     state->in_else = false;
-    syntatic_analysis_function(ast, state);
+    VARIABLE_ARRAY *variables = create_variable_array();
+    table->functions->functions = realloc(table->functions->functions, (table->functions->size + 1) * sizeof(FUNC*));
+    table->functions->functions[table->functions->size] = create_function(ast->data.AST_FUNCTION.name);
+    table->functions->size++;
+    table->variables = variables;
+    syntatic_analysis_function(ast, state, variables);
+    free_variable_array(variables);
     free(state);
 }
-void syntatic_analysis_function(AST *ast, STATE *state)
+void syntatic_analysis_function(AST *ast, STATE *state, VARIABLE_ARRAY *variables)
 {
     if(ast == NULL)
         return;
@@ -77,9 +94,9 @@ void syntatic_analysis_function(AST *ast, STATE *state)
         exit(16); // ERROR CODE 16
     }
     for(size_t i = 0; i < body->data.AST_NODE.array_size; i++)
-        syntatic_analysis_body(body->data.AST_NODE.children[i], state);
+        syntatic_analysis_body(body->data.AST_NODE.children[i], state, variables);
 }
-void syntatic_analysis_body(AST *ast, STATE *state)
+void syntatic_analysis_body(AST *ast, STATE *state, VARIABLE_ARRAY *variables)
 {
     // TODO: variable type checking
     if(state->returned)
@@ -90,9 +107,51 @@ void syntatic_analysis_body(AST *ast, STATE *state)
     if(ast == NULL)
         return;
     if(ast->tag == AST_DECLARATION)
+    {
+        if(ast->data.AST_DECLARATION.type == NULL)
+        {
+            printf("ERROR: declaration type is NULL\n");
+            exit(12); // ERROR CODE 12
+        }
+        if(ast->data.AST_DECLARATION.name == NULL)
+        {
+            printf("ERROR: declaration name is NULL\n");
+            exit(12); // ERROR CODE 12
+        }
+        if(variable_array_has_variable(variables, ast->data.AST_DECLARATION.name))
+        {
+            printf("ERROR: variable %s already declared\n", ast->data.AST_DECLARATION.name);
+            exit(17); // ERROR CODE 17
+        }
+        VARIABLE *variable = create_variable(ast->data.AST_DECLARATION.type, ast->data.AST_DECLARATION.name);
+        // add_variable(variables, create_variable(ast->data.AST_DECLARATION.type, ast->data.AST_DECLARATION.name));
+        variable_array_add_variable(variables, variable);
         return;
+    }
     if(ast->tag == AST_ASSIGN)
+    {
+        if(ast->data.AST_ASSIGN.name == NULL)
+        {
+            printf("ERROR: assign name is NULL\n");
+            exit(12); // ERROR CODE 12
+        }
+        if(!variable_array_has_variable(variables, ast->data.AST_ASSIGN.name))
+        {
+            printf("ERROR: variable %s not declared\n", ast->data.AST_ASSIGN.name);
+            exit(17); // ERROR CODE 17
+        }
+        if(ast->data.AST_ASSIGN.value == NULL)
+        {
+            printf("ERROR: assign value is NULL\n");
+            exit(12); // ERROR CODE 12
+        }
+        if(!has_same_type(ast->data.AST_ASSIGN.value, variable_array_get_variable(variables, ast->data.AST_ASSIGN.name)->type))
+        {
+            printf("ERROR: variable %s has different type\n", ast->data.AST_ASSIGN.name);
+            exit(17); // ERROR CODE 17
+        }
         return;
+    }
     if(ast->tag == AST_RETURN)
     {
         state->returned = true;
@@ -100,12 +159,12 @@ void syntatic_analysis_body(AST *ast, STATE *state)
     }
     if(ast->tag == AST_IF)
     {
-        syntatic_analysis_if(ast, state);
+        syntatic_analysis_if(ast, state, variables);
         return;
     }
     if(ast->tag == AST_WHILE)
     {
-        syntatic_analysis_while(ast, state);
+        syntatic_analysis_while(ast, state, variables);
         return;
     }
     if(ast->tag == AST_FOR)
@@ -136,7 +195,7 @@ void syntatic_analysis_body(AST *ast, STATE *state)
         exit(17); // ERROR CODE 17
     }
 }
-void syntatic_analysis_while(AST *ast, STATE *state)
+void syntatic_analysis_while(AST *ast, STATE *state, VARIABLE_ARRAY *variables)
 {
     if(ast == NULL)
         return;
@@ -163,10 +222,10 @@ void syntatic_analysis_while(AST *ast, STATE *state)
     }
     state->whilecount++;
     for(size_t i = 0; i < body->data.AST_NODE.array_size; i++)
-        syntatic_analysis_body(body->data.AST_NODE.children[i], state);
+        syntatic_analysis_body(body->data.AST_NODE.children[i], state, variables);
     state->whilecount--;
 }
-void syntatic_analysis_if(AST *ast, STATE *state)
+void syntatic_analysis_if(AST *ast, STATE *state, VARIABLE_ARRAY *variables)
 {
     if(ast == NULL)
         return;
@@ -194,7 +253,7 @@ void syntatic_analysis_if(AST *ast, STATE *state)
     state->ifcount++;
     for(size_t i = 0; i < body->data.AST_NODE.array_size; i++)
     {
-        syntatic_analysis_body(body->data.AST_NODE.children[i], state);
+        syntatic_analysis_body(body->data.AST_NODE.children[i], state, variables);
         state->returned = false;
     }
     state->ifcount--;

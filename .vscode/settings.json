@@ -1,10 +1,20 @@
 {
     "files.associations": {
         "*.ejs": "html",
+        "*.h": "c",
+        "*.c": "c",
         "ast.h": "c",
         "lexer.h": "c",
         "main.h": "c",
-        "syntatic_analysis.h": "c"
+        "syntatic_analysis.h": "c",
+        "array": "c",
+        "functional": "c",
+        "istream": "c",
+        "ostream": "c",
+        "tuple": "c",
+        "type_traits": "c",
+        "utility": "c"
     },
-    "C_Cpp.default.configurationProvider": "ms-vscode.makefile-tools"
+    "configurationProvider": "ms-vscode.makefile-tools",
+    "C_Cpp.default.configurationProvider": "ms-vscode.makefile-tools",
 }
