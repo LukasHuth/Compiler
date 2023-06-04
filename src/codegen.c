@@ -1,12 +1,12 @@
 #include "headers/codegen.h"
 
-void generate_binary_expression(FILE *file, AST *ast);
-void generate_expression(FILE *file, AST *ast);
-void generate_return(FILE *file, AST *ast);
+void generate_binary_expression(FILE *file, AST *ast, size_t* temp_count);
+char* generate_expression(FILE *file, AST *ast, size_t* temp_count);
+void generate_return(FILE *file, AST *ast, size_t* temp_count);
 void generate_function_body(FILE *file, AST *ast);
-void generate_variable_declaration(FILE *file, AST *ast);
-void generate_variable_assignment(FILE *file, AST *ast);
-void generate_function_call(FILE *file, AST *ast);
+void generate_variable_declaration(FILE *file, AST *ast, size_t* temp_count);
+void generate_variable_assignment(FILE *file, AST *ast, size_t* temp_count);
+void generate_function_call(FILE *file, AST *ast, size_t* temp_count);
 void generate_function(AST *ast, FILE *file);
 
 CODEGEN *init_codegen(FILE *file, AST *ast)
@@ -56,7 +56,8 @@ void codegen_generate(CODEGEN *codegen)
     }
     char* main_function_name = "start";
     fprintf(file, "define i32 @main() {\n");
-    fprintf(file, "ret i32 call i32 @%s\n", main_function_name);
+    fprintf(file, "%%t0 = call i32 @%s()\n", main_function_name);
+    fprintf(file, "ret i32 %%t0\n");
     fprintf(file, "}\n");
 }
 bool file_and_ast_valid(FILE *file, AST *ast)
@@ -83,22 +84,24 @@ void generate_function(AST *ast, FILE *file)
 void generate_function_body(FILE *file, AST *ast)
 {
     if(!file_and_ast_valid(file, ast)) return;
+    size_t* temp_count = calloc(1, sizeof(size_t));
+    *temp_count = 0;
     for(size_t i = 0; i < ast->data.AST_NODE.array_size; i++)
     {
         AST *child = ast->data.AST_NODE.children[i];
         switch (child->tag)
         {
         case AST_RETURN:
-            generate_return(file, child);
+            generate_return(file, child, temp_count);
             break;
         case AST_DECLARATION:
-            generate_variable_declaration(file, child);
+            generate_variable_declaration(file, child, temp_count);
             break;
         case AST_ASSIGN:
-            generate_variable_assignment(file, child);
+            generate_variable_assignment(file, child, temp_count);
             break;
         case AST_CALL:
-            generate_function_call(file, child);
+            generate_function_call(file, child, temp_count);
             break;
         default:
             printf("Unknown tag: %d\n", child->tag);
@@ -106,15 +109,21 @@ void generate_function_body(FILE *file, AST *ast)
         }
     }
 }
-void generate_function_call(FILE *file, AST *ast)
+void generate_function_call(FILE *file, AST *ast, size_t* temp_count)
 {
     if(!file_and_ast_valid(file, ast)) return;
+    char** arguments = calloc(ast->data.AST_CALL.array_size, sizeof(char*));
+    for(size_t i = 0; i < ast->data.AST_CALL.array_size; i++)
+    {
+        AST *child = ast->data.AST_CALL.arguments[i];
+        char* temp_name = generate_expression(file, child, temp_count);
+        arguments[i] = temp_name;
+    }
     char *function_name = ast->data.AST_CALL.name;
     fprintf(file, "call i32 @%s(", function_name);
     for(size_t i = 0; i < ast->data.AST_CALL.array_size; i++)
     {
-        AST *child = ast->data.AST_CALL.arguments[i];
-        generate_expression(file, child);
+        fprintf(file, "i32 %s", arguments[i]);
         if(i < ast->data.AST_CALL.array_size - 1)
         {
             fprintf(file, ", ");
@@ -122,55 +131,57 @@ void generate_function_call(FILE *file, AST *ast)
     }
     fprintf(file, ")\n");
 }
-void generate_variable_assignment(FILE *file, AST *ast)
+void generate_variable_assignment(FILE *file, AST *ast, size_t* temp_count)
 {
     if(!file_and_ast_valid(file, ast)) return;
-    fprintf(file, "store i32 ");
-    generate_expression(file, ast->data.AST_ASSIGN.value);
-    fprintf(file, ", i32* %%%s\n", ast->data.AST_ASSIGN.name);
+    char* tempname = generate_expression(file, ast->data.AST_ASSIGN.value, temp_count);
+    fprintf(file, "store i32 %s, i32* %%%s\n", tempname, ast->data.AST_ASSIGN.name);
 }
 
-void generate_variable_declaration(FILE *file, AST *ast)
+void generate_variable_declaration(FILE *file, AST *ast, size_t* temp_count)
 {
     if(!file_and_ast_valid(file, ast)) return;
     fprintf(file, "%%%s = alloca i32\n", ast->data.AST_DECLARATION.name);
-    fprintf(file, "store i32 ");
-    generate_expression(file, ast->data.AST_DECLARATION.value);
-    fprintf(file, ", i32* %%%s\n", ast->data.AST_DECLARATION.name);
+    // fprintf(file, "store i32 ");
+    char* tempname = generate_expression(file, ast->data.AST_DECLARATION.value, temp_count);
+    fprintf(file, "store i32 %s, i32* %%%s\n", tempname, ast->data.AST_DECLARATION.name);
 }
-void generate_return(FILE *file, AST *ast)
+void generate_return(FILE *file, AST *ast, size_t* temp_count)
 {
     if(!file_and_ast_valid(file, ast)) return;
-    fprintf(file, "ret i32 ");
     AST *expr = ast->data.AST_RETURN.expr;
-    generate_expression(file, expr);
+    char* tempname = generate_expression(file, expr, temp_count);
+    fprintf(file, "ret i32 %s\n", tempname);
 }
-void generate_expression(FILE *file, AST *ast)
+char* generate_expression(FILE *file, AST *ast, size_t* temp_count)
 {
-    if(!file_and_ast_valid(file, ast)) return;
+    if(!file_and_ast_valid(file, ast)) return "";
+    char* temp_name = calloc(10, sizeof(char));
     switch (ast->tag)
     {
     case AST_NUMBER:
-        fprintf(file, "%d", ast->data.AST_NUMBER.number);
-        break;
+        return ast->data.AST_NUMBER.number;
     case AST_VARIABLE:
-        fprintf(file, "%%%s", ast->data.AST_VARIABLE.name);
+        fprintf(file, "%%t%ld = load i32, i32* %%%s\n", *temp_count, ast->data.AST_VARIABLE.name);
         break;
     case AST_ADD: // merge in binary tag
     case AST_SUB:
     case AST_MUL:
     case AST_DIV:
-        generate_binary_expression(file, ast);
+        generate_binary_expression(file, ast, temp_count);
         break;
     case AST_CALL:
-        generate_function_call(file, ast);
+        generate_function_call(file, ast, temp_count);
         break;
     default:
         printf("Unknown tag: %d\n", ast->tag);
         break;
     }
+    sprintf(temp_name, "%%t%zu", *temp_count);
+    *temp_count = *temp_count + 1;
+    return temp_name;
 }
-void generate_binary_expression(FILE *file, AST *ast)
+void generate_binary_expression(FILE *file, AST *ast, size_t* temp_count)
 {
     if(!file_and_ast_valid(file, ast)) return;
     char *op = NULL;
@@ -192,9 +203,13 @@ void generate_binary_expression(FILE *file, AST *ast)
         printf("Unknown tag: %d\n", ast->tag);
         break;
     }
-    fprintf(file, "%s i32 ", op);
+    printf("op: %s\n", op);
     // free(op);
-    generate_expression(file, ast->data.AST_TUPLE.left);
-    fprintf(file, ", ");
-    generate_expression(file, ast->data.AST_TUPLE.right);
+    char* left_name = generate_expression(file, ast->data.AST_TUPLE.left, temp_count);
+    char* right_name = generate_expression(file, ast->data.AST_TUPLE.right, temp_count);
+    *temp_count = *temp_count + 1;
+    char* temp_name = calloc(1, sizeof(char*));
+    sprintf(temp_name, "%%t%ld", *temp_count);
+    fprintf(file, "%s = %s i32 %s, %s\n", temp_name, op, left_name, right_name);
+    free(temp_name);
 }
