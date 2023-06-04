@@ -1,12 +1,10 @@
 #ifndef H_AST_TAG
 #define H_AST_TAG
 #include <stdio.h>
+#include <string.h>
 typedef enum {
   AST_NUMBER,
-  AST_ADD,
-  AST_SUB,
-  AST_MUL,
-  AST_DIV,
+  AST_BINARY_OP,
   AST_EXPR,
   AST_RETURN,
   AST_ARGUMENT,
@@ -26,6 +24,5 @@ typedef enum {
   AST_NOOP,
 } AST_TAG;
 char* get_tag_name(AST_TAG tag);
-int tag_get_priority(AST_TAG tag);
-char get_op(AST_TAG tag);
+int tag_get_priority(char* tag);
 #endif

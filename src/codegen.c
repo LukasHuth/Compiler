@@ -120,7 +120,7 @@ void generate_function_call(FILE *file, AST *ast, size_t* temp_count)
         arguments[i] = temp_name;
     }
     char *function_name = ast->data.AST_CALL.name;
-    fprintf(file, "call i32 @%s(", function_name);
+    fprintf(file, "%%t%ld = call i32 @%s(", *temp_count, function_name);
     for(size_t i = 0; i < ast->data.AST_CALL.array_size; i++)
     {
         fprintf(file, "i32 %s", arguments[i]);
@@ -159,12 +159,14 @@ char* generate_expression(FILE *file, AST *ast, size_t* temp_count)
     case AST_NUMBER:
         return ast->data.AST_NUMBER.number;
     case AST_VARIABLE:
+        if(ast->data.AST_VARIABLE.is_arg)
+        {
+            sprintf(temp_name, "%%%s", ast->data.AST_VARIABLE.name);
+            return temp_name;
+        }
         fprintf(file, "%%t%ld = load i32, i32* %%%s\n", *temp_count, ast->data.AST_VARIABLE.name);
         break;
-    case AST_ADD: // merge in binary tag
-    case AST_SUB:
-    case AST_MUL:
-    case AST_DIV:
+    case AST_BINARY_OP:
         generate_binary_expression(file, ast, temp_count);
         break;
     case AST_CALL:
@@ -181,30 +183,47 @@ char* generate_expression(FILE *file, AST *ast, size_t* temp_count)
 void generate_binary_expression(FILE *file, AST *ast, size_t* temp_count)
 {
     if(!file_and_ast_valid(file, ast)) return;
-    char *op = NULL;
-    switch (ast->tag)
+    if(ast->data.AST_TUPLE.op == NULL)
     {
-    case AST_ADD:
+        printf("Operator is NULL\n");
+        return;
+    }
+    if(ast->data.AST_TUPLE.left == NULL)
+    {
+        printf("Left is NULL\n");
+        return;
+    }
+    if(ast->data.AST_TUPLE.right == NULL)
+    {
+        printf("Right is NULL\n");
+        return;
+    }
+    char *op = ast->data.AST_TUPLE.op;
+    if(strcmp(op, "+") == 0)
+    {
         op = "add";
-        break;
-    case AST_SUB:
+    }
+    else if(strcmp(op, "-") == 0)
+    {
         op = "sub";
-        break;
-    case AST_MUL:
+    }
+    else if(strcmp(op, "*") == 0)
+    {
         op = "mul";
-        break;
-    case AST_DIV:
+    }
+    else if(strcmp(op, "/") == 0)
+    {
         op = "sdiv";
-        break;
-    default:
-        printf("Unknown tag: %d\n", ast->tag);
-        break;
+    }
+    else
+    {
+        printf("Unknown operator: %s\n", op);
+        return;
     }
     printf("op: %s\n", op);
     // free(op);
     char* left_name = generate_expression(file, ast->data.AST_TUPLE.left, temp_count);
     char* right_name = generate_expression(file, ast->data.AST_TUPLE.right, temp_count);
-    *temp_count = *temp_count + 1;
     char* temp_name = calloc(1, sizeof(char*));
     sprintf(temp_name, "%%t%ld", *temp_count);
     fprintf(file, "%s = %s i32 %s, %s\n", temp_name, op, left_name, right_name);

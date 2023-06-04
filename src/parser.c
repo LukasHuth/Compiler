@@ -297,22 +297,36 @@ AST *parse_type(LEXER *lexer)
     }
 }
 
+bool is_binary_op(LEXER_TAG tag)
+{
+    return tag == LEXER_PLUS || tag == LEXER_MINUS || tag == LEXER_STAR || tag == LEXER_SLASH;
+}
+
 AST *parse_term(LEXER *lexer)
 {
     AST *left = parse_factor(lexer);
-    while (peek(lexer) == LEXER_STAR || peek(lexer) == LEXER_SLASH)
+    while (is_binary_op(peek(lexer)))
     {
         LEXER_TAG tag = peek(lexer);
-        eat(lexer, tag);
+        LEXER_TOKEN *token = eat(lexer, tag);
+        if(left->tag == AST_BINARY_OP)
+        {
+            if(left->data.AST_TUPLE.op == token->data)
+            {
+                AST* right = parse_factor(lexer);
+                left = AST_new_tuple(AST_BINARY_OP, left, right, token->data);
+                continue;
+            }
+            if(tag_get_priority(left->data.AST_TUPLE.op) < tag_get_priority(token->data))
+            {
+                AST* right = parse_factor(lexer);
+                AST* new_left = AST_new_tuple(AST_BINARY_OP, left->data.AST_TUPLE.left, right, token->data);
+                left->data.AST_TUPLE.left = new_left;
+                continue;
+            }
+        }
         AST *right = parse_factor(lexer);
-        left = AST_new_tuple(tag == LEXER_STAR ? AST_MUL : AST_DIV, left, right);
-    }
-    while (peek(lexer) == LEXER_PLUS || peek(lexer) == LEXER_MINUS)
-    {
-        LEXER_TAG tag = peek(lexer);
-        eat(lexer, tag);
-        AST *right = parse_factor(lexer);
-        left = AST_new_tuple(tag == LEXER_PLUS ? AST_ADD : AST_SUB, left, right);
+        left = AST_new_tuple(AST_BINARY_OP, left, right, token->data);
     }
     return left;
 }
@@ -338,7 +352,7 @@ AST *parse_factor(LEXER *lexer)
         {
             return parse_call(lexer, name);
         }
-        return AST_new_variable(name);
+        return AST_new_variable(name, false);
     }
     printf("Parser(parse_factor): Error: Unexpected token %s\n", LEXER_TAG_to_string(peek(lexer)));
     exit(1);

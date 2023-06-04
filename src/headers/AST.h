@@ -12,7 +12,7 @@ struct AST {
   AST_TAG tag;
   union data {
     struct AST_NUMBER { char* number; } AST_NUMBER;
-    struct AST_TUPLE { AST *left; AST *right; } AST_TUPLE;
+    struct AST_TUPLE { AST *left; AST *right; char* op; } AST_TUPLE;
     struct AST_EXPR { AST *expr; } AST_EXPR;
     struct AST_RETURN { AST *expr; } AST_RETURN;
     struct AST_ARGUMENT { char* name; AST *type; } AST_ARGUMENT;
@@ -25,13 +25,13 @@ struct AST {
     struct AST_WHILE { AST *condition; AST *body; } AST_WHILE;
     struct AST_FOR { AST *init; AST *condition; AST *increment; AST *body; } AST_FOR;
     struct AST_CALL { char* name; AST* *arguments; size_t array_size; } AST_CALL;
-    struct AST_VARIABLE { char* name; } AST_VARIABLE;
+    struct AST_VARIABLE { char* name; bool is_arg; } AST_VARIABLE;
   } data;
 };
 AST *AST_new();
 AST *AST_new_single(AST_TAG tag, AST *expr);
 AST *AST_new_number(char* number);
-AST *AST_new_tuple(AST_TAG tag, AST *left, AST *right);
+AST *AST_new_tuple(AST_TAG tag, AST *left, AST *right, char* op);
 // from here on, the functions are not written at the moment
 AST *AST_new_node();
 AST *AST_new_expr(AST *expr);
@@ -48,7 +48,7 @@ AST *AST_new_break();
 AST *AST_new_noop();
 AST *AST_new_continue();
 AST *AST_new_call(char* name, AST* *arguments, size_t array_size);
-AST *AST_new_variable(char* name);
+AST *AST_new_variable(char* name, bool is_arg);
 void AST_add_argument(AST* ast, AST* argument);
 void AST_add_child(AST* ast, AST* child);
 // until here

@@ -5,14 +5,8 @@ char* get_tag_name(AST_TAG tag)
     {
     case AST_NUMBER:
         return "AST_NUMBER";
-    case AST_ADD:
-        return "AST_ADD";
-    case AST_SUB:
-        return "AST_SUB";
-    case AST_DIV:
-        return "AST_DIV";
-    case AST_MUL:
-        return "AST_MUL";
+    case AST_BINARY_OP:
+        return "AST_BINARY_OP";
     case AST_EXPR:
         return "AST_EXPR";
     case AST_RETURN:
@@ -48,34 +42,13 @@ char* get_tag_name(AST_TAG tag)
         return "?";
     }
 }
-int tag_get_priority(AST_TAG tag)
+int tag_get_priority(char* tag)
 {
-    switch (tag)
-    {
-    case AST_ADD:
-    case AST_SUB:
+    if (strcmp(tag, "==") == 0)
         return 1;
-    case AST_DIV:
-    case AST_MUL:
+    if(strcmp(tag, "+") == 0 || strcmp(tag, "-") == 0)
         return 2;
-    default:
-        return -1;
-    }
-}
-char get_op(AST_TAG tag)
-{
-    switch (tag)
-    {
-    case AST_ADD:
-        return '+';
-    case AST_SUB:
-        return '-';
-    case AST_DIV:
-        return '/';
-    case AST_MUL:
-        return '*';
-    default:
-        printf("AST(get_op): Error: Unknown tag\n");
-        return '?';
-    }
+    if(strcmp(tag, "*") == 0 || strcmp(tag, "/") == 0)
+        return 3;
+    return -1;
 }

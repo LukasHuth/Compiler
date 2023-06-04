@@ -115,9 +115,9 @@ AST *AST_new_call(char* name, AST* *arguments, size_t array_size)
     AST ast = { .tag = AST_CALL, .data = { .AST_CALL = { .name = name, .arguments = arguments, .array_size = array_size } } };
     return AST_new(ast);
 }
-AST *AST_new_variable(char* name)
+AST *AST_new_variable(char* name, bool is_arg)
 {
-    AST ast = { .tag = AST_VARIABLE, .data = { .AST_VARIABLE = { .name = name } } };
+    AST ast = { .tag = AST_VARIABLE, .data = { .AST_VARIABLE = { .name = name, .is_arg = is_arg } } };
     return AST_new(ast);
 }
 
@@ -131,9 +131,9 @@ AST *AST_new_number(char* number)
     AST ast = { .tag = AST_NUMBER, .data = { .AST_NUMBER = { .number = number } } };
     return AST_new(ast);
 }
-AST *AST_new_tuple(AST_TAG tag, AST *left, AST *right)
+AST *AST_new_tuple(AST_TAG tag, AST *left, AST *right, char* op)
 {
-    AST ast = { .tag = tag, .data = { .AST_TUPLE = { .left = left, .right = right } } };
+    AST ast = { .tag = tag, .data = { .AST_TUPLE = { .left = left, .right = right, .op = op } } };
     return AST_new(ast);
 }
 void AST_print(AST *ast)
@@ -143,13 +143,10 @@ void AST_print(AST *ast)
     case AST_NUMBER:
         printf("%s", ast->data.AST_NUMBER.number);
         break;
-    case AST_ADD:
-    case AST_SUB:
-    case AST_DIV:
-    case AST_MUL:
+    case AST_BINARY_OP:
         printf("(");
         AST_print(ast->data.AST_TUPLE.left);
-        printf("%c", get_op(ast->tag));
+        printf("%s", ast->data.AST_TUPLE.op);
         AST_print(ast->data.AST_TUPLE.right);
         printf(")");
         break;
@@ -325,12 +322,10 @@ void AST_free(AST *ast)
         AST_free(ast->data.AST_FOR.body);
         if(DEBUG) printf("free for\n");
         break;
-    case AST_ADD:
-    case AST_SUB:
-    case AST_MUL:
-    case AST_DIV:
+    case AST_BINARY_OP:
         AST_free(ast->data.AST_TUPLE.left);
         AST_free(ast->data.AST_TUPLE.right);
+        // free(ast->data.AST_TUPLE.op);
         if(DEBUG) printf("free tuple\n");
         break;
     case AST_EXPR:

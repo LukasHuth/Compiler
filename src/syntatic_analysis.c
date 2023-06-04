@@ -65,6 +65,26 @@ STATE *create_state()
     state->in_else = false;
     return state;
 }
+void analyse_function_arguments(AST* *args, size_t args_size, AST *ast)
+{
+    ast = ast;
+    size_t ast_size = ast->data.AST_NODE.array_size;
+    for(size_t i = 0; i < args_size; i++)
+    {
+        AST *arg = args[i];
+        printf("ARGUMENT: %s\n", get_tag_name(arg->tag));
+        if(arg->tag != AST_ARGUMENT)
+        {
+            printf("ERROR: argument is not a AST_ARGUMENT\n");
+            exit(18); // ERROR CODE 18
+        }
+        for(size_t j = 0; j < ast_size; j++)
+        {
+            // AST *node = ast->data.AST_NODE.children[j];
+            // TODO: check if node contains a expressing with variable and if yes check if variable is in arguments and if yes check if types are the same
+        }
+    }
+}
 void syntatic_analysis_function(AST *ast, STATE *state, VARIABLE_ARRAY *variables)
 {
     if(ast == NULL)
@@ -100,6 +120,9 @@ void syntatic_analysis_function(AST *ast, STATE *state, VARIABLE_ARRAY *variable
         printf("ERROR: function body is not a AST_NODE\n");
         exit(16); // ERROR CODE 16
     }
+    AST* *args = ast->data.AST_FUNCTION.arguments;
+    size_t argsc = ast->data.AST_FUNCTION.array_size;
+    analyse_function_arguments(args, argsc, ast);
     for(size_t i = 0; i < body->data.AST_NODE.array_size; i++)
         syntatic_analysis_body(body->data.AST_NODE.children[i], state, variables);
 }
@@ -196,6 +219,7 @@ void syntatic_analysis_body(AST *ast, STATE *state, VARIABLE_ARRAY *variables)
     }
     if(ast->tag == AST_CALL)
         return;
+    printf("ERROR: unknown node tag (%s)\n", get_tag_name(ast->tag));
     if(ast->tag != AST_NODE)
     {
         printf("ERROR: node is not a AST_NODE\n");
