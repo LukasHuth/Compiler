@@ -127,7 +127,7 @@ void lex(LEXER *lexer)
         {
             if (isdigit(c))
             {
-                while (isdigit(peek_char(lexer->file)))
+                while (isdigit(peek_char(lexer->file)) || peek_char(lexer->file) == '.')
                 {
                     c = get_char(lexer->file);
                     str_size++;

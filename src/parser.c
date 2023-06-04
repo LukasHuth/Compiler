@@ -319,7 +319,7 @@ AST *parse_factor(LEXER *lexer)
 {
     if (peek(lexer) == LEXER_NUMBER)
     {
-        int number = atoi(eat(lexer, LEXER_NUMBER)->data);
+        char* number = eat(lexer, LEXER_NUMBER)->data;
         return AST_new_number(number);
     }
     if (peek(lexer) == LEXER_OPEN_PAREN)

@@ -126,7 +126,7 @@ AST *AST_new_single(AST_TAG tag, AST *expr)
     AST ast = { .tag = tag, .data = { .AST_EXPR = { .expr = expr } } };
     return AST_new(ast);
 }
-AST *AST_new_number(int number)
+AST *AST_new_number(char* number)
 {
     AST ast = { .tag = AST_NUMBER, .data = { .AST_NUMBER = { .number = number } } };
     return AST_new(ast);
@@ -141,7 +141,7 @@ void AST_print(AST *ast)
     switch (ast->tag)
     {
     case AST_NUMBER:
-        printf("%d", ast->data.AST_NUMBER.number);
+        printf("%s", ast->data.AST_NUMBER.number);
         break;
     case AST_ADD:
     case AST_SUB:
