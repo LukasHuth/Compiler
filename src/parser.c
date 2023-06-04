@@ -80,6 +80,15 @@ AST *parse_body(LEXER *lexer)
     {
         AST* expr = parse_expr(lexer);
         AST_add_child(ast, expr);
+        if(peek(lexer) == LEXER_SEMICOLON)
+        {
+            eat(lexer, LEXER_SEMICOLON);
+            continue;
+        }
+        if(expr->tag != AST_DECLARATION) continue;
+        AST *assignment = parse_assignment(lexer, expr->data.AST_DECLARATION.name);
+        AST_add_child(ast, assignment);
+        eat(lexer, LEXER_SEMICOLON);
     }
     eat(lexer, LEXER_CLOSE_BRACE);
     return ast;
@@ -137,12 +146,12 @@ AST *parse_expr(LEXER *lexer)
         }
         if(strcmp(name, "break") == 0)
         {
-            eat(lexer, LEXER_SEMICOLON);
+            // eat(lexer, LEXER_SEMICOLON);
             return AST_new_break();
         }
         if(strcmp(name, "continue") == 0)
         {
-            eat(lexer, LEXER_SEMICOLON);
+            // eat(lexer, LEXER_SEMICOLON);
             return AST_new_continue();
         }
         if(strcmp(name, "import") == 0)
@@ -245,7 +254,7 @@ AST *parse_return(LEXER *lexer)
 {
     AST* value = parse_term(lexer);
     // AST_print(value);
-    eat(lexer, LEXER_SEMICOLON);
+    // eat(lexer, LEXER_SEMICOLON);
     return AST_new_return(value);
 }
 
@@ -253,21 +262,14 @@ AST *parse_declaration(LEXER *lexer, char* name)
 {
     eat(lexer, LEXER_COLON);
     AST* type = parse_type(lexer);
-    if(peek(lexer) == LEXER_EQUALS)
-    {
-        eat(lexer, LEXER_EQUALS);
-        AST* value = parse_term(lexer);
-        eat(lexer, LEXER_SEMICOLON);
-        return AST_new_declaration(name, type, value);
-    }
-    return AST_new_declaration(name, type, AST_new_number(0));
+    return AST_new_declaration(name, type);
 }
 
 AST *parse_assignment(LEXER *lexer, char *name)
 {
     eat(lexer, LEXER_EQUALS);
     AST *value = parse_term(lexer);
-    eat(lexer, LEXER_SEMICOLON);
+    // eat(lexer, LEXER_SEMICOLON);
     return AST_new_assign(name, value);
 }
 
@@ -359,6 +361,6 @@ AST *parse_call(LEXER *lexer, char *name)
         }
     }
     eat(lexer, LEXER_CLOSE_PAREN);
-    eat(lexer, LEXER_SEMICOLON);
+    // eat(lexer, LEXER_SEMICOLON);
     return AST_new_call(name, arguments, array_size);
 }

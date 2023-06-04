@@ -4,7 +4,7 @@ void generate_binary_expression(FILE *file, AST *ast, size_t* temp_count);
 char* generate_expression(FILE *file, AST *ast, size_t* temp_count);
 void generate_return(FILE *file, AST *ast, size_t* temp_count);
 void generate_function_body(FILE *file, AST *ast);
-void generate_variable_declaration(FILE *file, AST *ast, size_t* temp_count);
+void generate_variable_declaration(FILE *file, AST *ast);
 void generate_variable_assignment(FILE *file, AST *ast, size_t* temp_count);
 void generate_function_call(FILE *file, AST *ast, size_t* temp_count);
 void generate_function(AST *ast, FILE *file);
@@ -95,7 +95,7 @@ void generate_function_body(FILE *file, AST *ast)
             generate_return(file, child, temp_count);
             break;
         case AST_DECLARATION:
-            generate_variable_declaration(file, child, temp_count);
+            generate_variable_declaration(file, child);
             break;
         case AST_ASSIGN:
             generate_variable_assignment(file, child, temp_count);
@@ -138,13 +138,10 @@ void generate_variable_assignment(FILE *file, AST *ast, size_t* temp_count)
     fprintf(file, "store i32 %s, i32* %%%s\n", tempname, ast->data.AST_ASSIGN.name);
 }
 
-void generate_variable_declaration(FILE *file, AST *ast, size_t* temp_count)
+void generate_variable_declaration(FILE *file, AST *ast)
 {
     if(!file_and_ast_valid(file, ast)) return;
     fprintf(file, "%%%s = alloca i32\n", ast->data.AST_DECLARATION.name);
-    // fprintf(file, "store i32 ");
-    char* tempname = generate_expression(file, ast->data.AST_DECLARATION.value, temp_count);
-    fprintf(file, "store i32 %s, i32* %%%s\n", tempname, ast->data.AST_DECLARATION.name);
 }
 void generate_return(FILE *file, AST *ast, size_t* temp_count)
 {

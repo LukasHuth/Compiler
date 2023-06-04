@@ -13,7 +13,9 @@
         "ostream": "c",
         "tuple": "c",
         "type_traits": "c",
-        "utility": "c"
+        "utility": "c",
+        "optional": "c",
+        "system_error": "c"
     },
     "configurationProvider": "ms-vscode.makefile-tools",
     "C_Cpp.default.configurationProvider": "ms-vscode.makefile-tools",

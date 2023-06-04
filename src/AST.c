@@ -69,9 +69,9 @@ AST *AST_new_type(char* name, bool is_array, AST* array_size)
     AST ast = { .tag = AST_TYPE, .data = { .AST_TYPE = { .name = name, .is_array = is_array, .array_size = array_size } } };
     return AST_new(ast);
 }
-AST *AST_new_declaration(char* name, AST *type, AST *value)
+AST *AST_new_declaration(char* name, AST *type)
 {
-    AST ast = { .tag = AST_DECLARATION, .data = { .AST_DECLARATION = { .name = name, .type = type, .value = value } } };
+    AST ast = { .tag = AST_DECLARATION, .data = { .AST_DECLARATION = { .name = name, .type = type } } };
     return AST_new(ast);
 }
 AST *AST_new_assign(char* name, AST *value)
@@ -199,8 +199,7 @@ void AST_print(AST *ast)
         break;
     case AST_DECLARATION:
         AST_print(ast->data.AST_DECLARATION.type);
-        printf(" %s = ", ast->data.AST_DECLARATION.name);
-        AST_print(ast->data.AST_DECLARATION.value);
+        printf(" %s;", ast->data.AST_DECLARATION.name);
         break;
     case AST_ASSIGN:
         printf("%s = ", ast->data.AST_ASSIGN.name);
@@ -303,8 +302,6 @@ void AST_free(AST *ast)
         break;
     case AST_DECLARATION:
         AST_free(ast->data.AST_DECLARATION.type);
-        printf("free declaration type (%s)\n", get_tag_name(ast->data.AST_DECLARATION.value->tag));
-        AST_free(ast->data.AST_DECLARATION.value);
         if(DEBUG) printf("free declaration\n");
         break;
     case AST_ASSIGN:

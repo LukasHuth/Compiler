@@ -33,3 +33,8 @@ debug:
 		rm DrMemory-Linux-2.5.0.tar.gz ; \
 	fi
 	DrMemory-Linux-2.5.0/bin64/drmemory -- $(exec)
+
+generate:
+	./$(exec)
+	llc -filetype=obj output.ll -o output.o
+	clang output.o -o output

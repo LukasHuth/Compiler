@@ -13,6 +13,7 @@ VARIABLE *variable_array_get_variable(VARIABLE_ARRAY *array, char *name);
 bool variable_array_has_variable(VARIABLE_ARRAY *array, char *name);
 VARIABLE_ARRAY *create_variable_array();
 VARIABLE *create_variable(AST *type, char *name);
+STATE *create_state();
 void free_variable(VARIABLE *variable);
 void free_variable_array(VARIABLE_ARRAY *array);
 bool has_same_type(AST *value, AST *type);
@@ -42,13 +43,8 @@ void syntatic_analysis_children(AST *ast, SYMBOL_TABLE *table)
         printf("ERROR: node is not a AST_FUNCTION\n");
         exit(11); // ERROR CODE 11
     }
-    STATE *state = calloc(1, sizeof(STATE));
+    STATE *state = create_state();
     state->in_function = true;
-    state->returned = false;
-    state->whilecount = 0;
-    state->forcount = 0;
-    state->ifcount = 0;
-    state->in_else = false;
     VARIABLE_ARRAY *variables = create_variable_array();
     table->functions->functions = realloc(table->functions->functions, (table->functions->size + 1) * sizeof(FUNC*));
     table->functions->functions[table->functions->size] = create_function(ast->data.AST_FUNCTION.name);
@@ -57,6 +53,17 @@ void syntatic_analysis_children(AST *ast, SYMBOL_TABLE *table)
     syntatic_analysis_function(ast, state, variables);
     free_variable_array(variables);
     free(state);
+}
+STATE *create_state()
+{
+    STATE *state = calloc(1, sizeof(STATE));
+    state->in_function = false;
+    state->returned = false;
+    state->whilecount = 0;
+    state->forcount = 0;
+    state->ifcount = 0;
+    state->in_else = false;
+    return state;
 }
 void syntatic_analysis_function(AST *ast, STATE *state, VARIABLE_ARRAY *variables)
 {
