@@ -2,8 +2,8 @@
 
 #define STATE SYNTATIC_ANALYSIS_STATE
 
-void syntatic_analysis_children(AST *ast, SYMBOL_TABLE *table);
-void syntatic_analysis_function(AST *ast, STATE *state, VARIABLE_ARRAY *variables);
+bool syntatic_analysis_children(AST *ast, SYMBOL_TABLE *table);
+bool syntatic_analysis_function(AST *ast, STATE *state, VARIABLE_ARRAY *variables);
 void syntatic_analysis_body(AST *ast, STATE *state, VARIABLE_ARRAY *variables);
 void syntatic_analysis_while(AST *ast, STATE *state, VARIABLE_ARRAY *variables);
 void syntatic_analysis_if(AST *ast, STATE *state, VARIABLE_ARRAY *variables);
@@ -28,16 +28,26 @@ void syntatic_analysis(AST *node)
         exit(10); // ERROR CODE 10
     }
     SYMBOL_TABLE *table = create_symbol_table();
+    bool has_main = false;
     for(size_t i = 0; i < node->data.AST_NODE.array_size; i++)
-        syntatic_analysis_children(node->data.AST_NODE.children[i], table);
+    {
+        bool is_main = syntatic_analysis_children(node->data.AST_NODE.children[i], table);
+        if(is_main)
+            has_main = true;
+    }
+    if(!has_main)
+    {
+        printf("ERROR: no main function\n");
+        exit(10); // ERROR CODE 10
+    }
     free_symbol_table(table);
 }
-void syntatic_analysis_children(AST *ast, SYMBOL_TABLE *table)
+bool syntatic_analysis_children(AST *ast, SYMBOL_TABLE *table)
 {
     if(ast == NULL)
-        return;
+        return false;
     if(ast->tag == AST_IMPORT)
-        return;
+        return false;
     if(ast->tag != AST_FUNCTION)
     {
         printf("ERROR: node is not a AST_FUNCTION\n");
@@ -50,9 +60,15 @@ void syntatic_analysis_children(AST *ast, SYMBOL_TABLE *table)
     table->functions->functions[table->functions->size] = create_function(ast->data.AST_FUNCTION.name);
     table->functions->size++;
     table->variables = variables;
-    syntatic_analysis_function(ast, state, variables);
+    bool is_main = syntatic_analysis_function(ast, state, variables);
+    if(!state->returned)
+    {
+        printf("ERROR: function %s does not return\n", ast->data.AST_FUNCTION.name);
+        exit(17); // ERROR CODE 17
+    }
     free_variable_array(variables);
     free(state);
+    return is_main;
 }
 STATE *create_state()
 {
@@ -65,30 +81,10 @@ STATE *create_state()
     state->in_else = false;
     return state;
 }
-void analyse_function_arguments(AST* *args, size_t args_size, AST *ast)
-{
-    ast = ast;
-    size_t ast_size = ast->data.AST_NODE.array_size;
-    for(size_t i = 0; i < args_size; i++)
-    {
-        AST *arg = args[i];
-        printf("ARGUMENT: %s\n", get_tag_name(arg->tag));
-        if(arg->tag != AST_ARGUMENT)
-        {
-            printf("ERROR: argument is not a AST_ARGUMENT\n");
-            exit(18); // ERROR CODE 18
-        }
-        for(size_t j = 0; j < ast_size; j++)
-        {
-            // AST *node = ast->data.AST_NODE.children[j];
-            // TODO: check if node contains a expressing with variable and if yes check if variable is in arguments and if yes check if types are the same
-        }
-    }
-}
-void syntatic_analysis_function(AST *ast, STATE *state, VARIABLE_ARRAY *variables)
+bool syntatic_analysis_function(AST *ast, STATE *state, VARIABLE_ARRAY *variables)
 {
     if(ast == NULL)
-        return;
+        return false;
     if(ast->tag != AST_FUNCTION)
     {
         printf("ERROR: node is not a AST_FUNCTION\n");
@@ -114,17 +110,25 @@ void syntatic_analysis_function(AST *ast, STATE *state, VARIABLE_ARRAY *variable
         printf("ERROR: function arguments is NULL\n");
         exit(15); // ERROR CODE 15
     }
+    char* function_name = ast->data.AST_FUNCTION.name;
+    bool is_main = strcmp(function_name, "main") == 0;
+    if(is_main)
+    {
+        if(strcmp(ast->data.AST_FUNCTION.type->data.AST_TYPE.name, "int") != 0)
+        {
+            printf("ERROR: main function must return int\n");
+            exit(15); // ERROR CODE 15
+        }
+    }
     AST *body = ast->data.AST_FUNCTION.body;
     if(body->tag != AST_NODE)
     {
         printf("ERROR: function body is not a AST_NODE\n");
         exit(16); // ERROR CODE 16
     }
-    AST* *args = ast->data.AST_FUNCTION.arguments;
-    size_t argsc = ast->data.AST_FUNCTION.array_size;
-    analyse_function_arguments(args, argsc, ast);
     for(size_t i = 0; i < body->data.AST_NODE.array_size; i++)
         syntatic_analysis_body(body->data.AST_NODE.children[i], state, variables);
+    return is_main;
 }
 void syntatic_analysis_body(AST *ast, STATE *state, VARIABLE_ARRAY *variables)
 {

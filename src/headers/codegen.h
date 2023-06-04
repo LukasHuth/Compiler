@@ -2,6 +2,7 @@
 #define H_CODEGEN
 #include "AST.h"
 #include <stdio.h>
+void reallocate_string(char **new, char* format, char *orig);
 
 typedef struct
 {

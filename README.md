@@ -22,4 +22,4 @@ clang output.o -o output
 
 ## TODO
 
-- syntatic analysis test if start function is int and existing
+- syntatic analysis test if main function is int and existing
