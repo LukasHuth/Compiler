@@ -22,4 +22,4 @@ clang output.o -o output
 
 ## TODO
 
-- syntatic analysis test if main function is int and existing
+- add llvm/lib [instructions here](https://llvm.org/docs/GettingStarted.html#llvm-lib)
