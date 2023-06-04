@@ -20,7 +20,9 @@ $(exec): $(OBJ)
 
 clean:
 	if [ ! -d $(out_dir) ]; then mkdir $(out_dir); fi
-	rm -f $(out_dir)/* $(exec)
+	rm -f $(out_dir)/*
+	rm -f $(exec)
+	rm -f output output.ll output.o
 
 .PHONY: clean
 
