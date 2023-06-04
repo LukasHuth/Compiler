@@ -21,7 +21,6 @@ int main()
     codegen_generate(codegen);
     // free everything
     codegen_free(codegen);
-    AST_free(ast);
     lexer_free(lexer);
     fclose(file);
     return 0;
