@@ -25,7 +25,7 @@ struct AST {
     struct AST_WHILE { AST *condition; AST *body; } AST_WHILE;
     struct AST_FOR { AST *init; AST *condition; AST *increment; AST *body; } AST_FOR;
     struct AST_CALL { char* name; AST* *arguments; size_t array_size; } AST_CALL;
-    struct AST_VARIABLE { char* name; bool is_arg; } AST_VARIABLE;
+    struct AST_VARIABLE { char* name; bool is_arg; int arg_index; } AST_VARIABLE;
   } data;
 };
 AST *AST_new();

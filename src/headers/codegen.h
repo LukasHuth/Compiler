@@ -15,8 +15,8 @@ typedef struct
     AST *ast;
 } CODEGEN;
 
-CODEGEN *init_codegen(FILE *file, AST *ast);
+void init_codegen(FILE *file, AST *ast);
 void codegen_free(CODEGEN *codegen);
-void codegen_generate(CODEGEN *codegen);
+// void codegen_generate(CODEGEN *codegen);
 
 #endif

@@ -17,10 +17,9 @@ int main()
     AST_print(ast);
     syntatic_analysis(ast);
     FILE* output_file = fopen("output.ll", "w");
-    CODEGEN *codegen = init_codegen(output_file, ast);
-    codegen_generate(codegen);
+    init_codegen(output_file, ast);
+    // codegen_generate(codegen);
     // free everything
-    codegen_free(codegen);
     lexer_free(lexer);
     fclose(file);
     return 0;
