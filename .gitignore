@@ -3,6 +3,7 @@ out/
 *.txt
 *.o
 *.ll
+*.bc
 output
 main
 DrMemory-*

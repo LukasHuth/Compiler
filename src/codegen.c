@@ -2,12 +2,14 @@
 
 void generate_binary_expression(FILE *file, AST *ast, size_t* temp_count);
 char* generate_expression(FILE *file, AST *ast, size_t* temp_count);
-void generate_return(FILE *file, AST *ast, size_t* temp_count);
-void generate_function_body(FILE *file, AST *ast);
+void generate_return(FILE *file, AST *ast, size_t* temp_count, LLVMBuilderRef builder);
+void generate_function_body(FILE *file, AST *ast, LLVMBuilderRef builder);
 void generate_variable_declaration(FILE *file, AST *ast);
 void generate_variable_assignment(FILE *file, AST *ast, size_t* temp_count);
 void generate_function_call(FILE *file, AST *ast, size_t* temp_count);
-void generate_function(AST *ast, FILE *file);
+void generate_function(AST *ast, FILE *file, LLVMModuleRef module, LLVMBuilderRef builder);
+
+void codegen_generate(CODEGEN *codegen, LLVMModuleRef module, LLVMBuilderRef builder);
 
 void reallocate_string(char **new, char* format, char *orig)
 {
@@ -17,9 +19,21 @@ void reallocate_string(char **new, char* format, char *orig)
 
 CODEGEN *init_codegen(FILE *file, AST *ast)
 {
+    LLVMInitializeCore(LLVMGetGlobalPassRegistry());
+    LLVMInitializeNativeTarget();
+    LLVMInitializeNativeAsmPrinter();
+    LLVMInitializeNativeAsmParser();
+
+    LLVMModuleRef module = LLVMModuleCreateWithName("add_module");
+    LLVMBuilderRef builder = LLVMCreateBuilder();
+    
     CODEGEN *codegen = malloc(sizeof(CODEGEN));
     codegen->file = file;
     codegen->ast = ast;
+
+    codegen_generate(codegen, module, builder);
+
+    LLVMWriteBitcodeToFile(module, "add.bc");
     return codegen;
 }
 void codegen_free(CODEGEN *codegen)
@@ -28,7 +42,7 @@ void codegen_free(CODEGEN *codegen)
     fclose(codegen->file);
     free(codegen);
 }
-void codegen_generate(CODEGEN *codegen)
+void codegen_generate(CODEGEN *codegen, LLVMModuleRef module, LLVMBuilderRef builder)
 {
     if(codegen == NULL)
     {
@@ -45,6 +59,16 @@ void codegen_generate(CODEGEN *codegen)
         printf("File is NULL\n");
         return;
     }
+    if(module == NULL)
+    {
+        printf("Module is NULL\n");
+        return;
+    }
+    if(builder == NULL)
+    {
+        printf("Builder is NULL\n");
+        return;
+    }
     AST *ast = codegen->ast;
     FILE *file = codegen->file;
     for(size_t i = 0; i < ast->data.AST_NODE.array_size; i++)
@@ -53,7 +77,7 @@ void codegen_generate(CODEGEN *codegen)
         switch (child->tag)
         {
         case AST_FUNCTION:
-            generate_function(child, file);
+            generate_function(child, file, module, builder);
             break;
         default:
             printf("Unknown tag: %d\n", child->tag);
@@ -70,40 +94,42 @@ bool file_and_ast_valid(FILE *file, AST *ast)
 {
     return file != NULL && ast != NULL;
 }
-void generate_function(AST *ast, FILE *file)
+void generate_function(AST *ast, FILE *file, LLVMModuleRef module, LLVMBuilderRef builder)
 {
-    if(ast == NULL)
-    {
-        printf("AST is NULL\n");
-        return;
-    }
-    if(file == NULL)
-    {
-        printf("File is NULL\n");
-        return;
-    }
+    if(ast == NULL){printf("AST is NULL\n");return;}
+    if(file == NULL){printf("File is NULL\n");return;}
+    if(module == NULL){printf("Module is NULL\n");return;}
+    if(builder == NULL){printf("Builder is NULL\n");return;}
     char* function_name = ast->data.AST_FUNCTION.name;
-    fprintf(file, "define i32 @%s(", function_name);
-    for(size_t i = 0; i < ast->data.AST_FUNCTION.array_size; i++)
+    // fprintf(file, "define i32 @%s(", function_name);
+    unsigned int param_count = ast->data.AST_FUNCTION.array_size;
+    LLVMTypeRef *param_types = malloc(sizeof(LLVMTypeRef) * param_count);
+    for(unsigned int i = 0; i < param_count; i++)
     {
         AST *child = ast->data.AST_FUNCTION.arguments[i];
         char* name = child->data.AST_ARGUMENT.name;
         AST *type = child->data.AST_ARGUMENT.type;
         char* type_name = type->data.AST_TYPE.name;
         char* type_format = (strcmp(type_name, "int") == 0) ? "i32" : "i32";
-        fprintf(file, "%s %%%s", type_format, name);
-        if(i < ast->data.AST_FUNCTION.array_size - 1)
-        {
-            fprintf(file, ", ");
-        }
+        param_types[i] = LLVMInt32Type();
     }
-    fprintf(file, ") {\n");
-    generate_function_body(file, ast->data.AST_FUNCTION.body);
+    // fprintf(file, ") {\n");
+    LLVMTypeRef function_type = LLVMFunctionType(LLVMInt32Type(), param_types, param_count, false);
+    LLVMValueRef function = LLVMAddFunction(module, function_name, function_type);
+    LLVMSetLinkage(function, LLVMExternalLinkage);
+    LLVMSetFunctionCallConv(function, LLVMCCallConv);
+    LLVMValueRef entry = LLVMAppendBasicBlock(function, "entry");
+    LLVMPositionBuilderAtEnd(builder, entry);
+    generate_function_body(file, ast->data.AST_FUNCTION.body, builder);
     fprintf(file, "}\n");
 }
-void generate_function_body(FILE *file, AST *ast)
+void generate_function_body(FILE *file, AST *ast, LLVMBuilderRef builder)
 {
     if(!file_and_ast_valid(file, ast)) return;
+    if(ast->tag != AST_NODE) return;
+    if(ast->data.AST_NODE.array_size == 0) return;
+    if(ast->data.AST_NODE.children == NULL) return;
+    if(builder == NULL) return;
     size_t* temp_count = calloc(1, sizeof(size_t));
     *temp_count = 0;
     for(size_t i = 0; i < ast->data.AST_NODE.array_size; i++)
@@ -112,7 +138,7 @@ void generate_function_body(FILE *file, AST *ast)
         switch (child->tag)
         {
         case AST_RETURN:
-            generate_return(file, child, temp_count);
+            generate_return(file, child, temp_count, builder);
             break;
         case AST_DECLARATION:
             generate_variable_declaration(file, child);
@@ -170,11 +196,15 @@ void generate_variable_declaration(FILE *file, AST *ast)
     if(!file_and_ast_valid(file, ast)) return;
     fprintf(file, "%%%s = alloca i32\n", ast->data.AST_DECLARATION.name);
 }
-void generate_return(FILE *file, AST *ast, size_t* temp_count)
+void generate_return(FILE *file, AST *ast, size_t* temp_count, LLVMBuilderRef builder)
 {
     if(!file_and_ast_valid(file, ast)) return;
+    if(ast->data.AST_RETURN.expr == NULL) return;
+    if(builder == NULL) return;
     AST *expr = ast->data.AST_RETURN.expr;
     char* tempname = generate_expression(file, expr, temp_count);
+    LLVMValueRef value = LLVMConstInt(LLVMInt32Type(), 1, 0);
+    LLVMBuildRet(builder, value);
     fprintf(file, "ret i32 %s\n", tempname);
     free(tempname);
 }

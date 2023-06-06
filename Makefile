@@ -3,7 +3,7 @@ out_dir = out
 src_dir = src
 
 CC=gcc
-CFLAGS=-I. -Wall -Wextra -Werror -Wpedantic -std=c99 -g -O3 -lm
+CFLAGS=-I. -Wall -Wextra -Werror -Wpedantic -std=c99 -g -O3 -lm -Iinclude -L/usr/lib/llvm-10/lib -lLLVM-10
 DEPS = $(wildcard $(src_dir)/*.h)
 SOURCE = $(wildcard $(src_dir)/*.c)
 OBJ_temp = $(SOURCE:.c=.o)
