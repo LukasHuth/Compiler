@@ -115,9 +115,9 @@ AST *AST_new_call(char* name, AST* *arguments, size_t array_size)
     AST ast = { .tag = AST_CALL, .data = { .AST_CALL = { .name = name, .arguments = arguments, .array_size = array_size } } };
     return AST_new(ast);
 }
-AST *AST_new_variable(char* name, bool is_arg)
+AST *AST_new_variable(char* name, bool is_arg, int arg_index)
 {
-    AST ast = { .tag = AST_VARIABLE, .data = { .AST_VARIABLE = { .name = name, .is_arg = is_arg } } };
+    AST ast = { .tag = AST_VARIABLE, .data = { .AST_VARIABLE = { .name = name, .is_arg = is_arg, .arg_index = arg_index } } };
     return AST_new(ast);
 }
 

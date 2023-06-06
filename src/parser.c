@@ -345,6 +345,19 @@ bool is_arg(AST* function, char* name)
     }
     return false;
 }
+size_t get_arg_position(AST *function, char* name)
+{
+    if(function == NULL) return false;
+    if(function->tag != AST_FUNCTION) return false;
+    for(size_t i = 0; i < function->data.AST_FUNCTION.array_size; i++)
+    {
+        if(strcmp(function->data.AST_FUNCTION.arguments[i]->data.AST_ARGUMENT.name, name) == 0)
+        {
+            return i;
+        }
+    }
+    return 0;
+}
 AST *parse_factor(LEXER *lexer, AST* function)
 {
     if (peek(lexer) == LEXER_NUMBER)
@@ -366,7 +379,10 @@ AST *parse_factor(LEXER *lexer, AST* function)
         {
             return parse_call(lexer, name, function);
         }
-        return AST_new_variable(name, is_arg(function, name));
+        bool b_is_arg = is_arg(function, name);
+        int position = 0;
+        if(b_is_arg) position = get_arg_position(function, name);
+        return AST_new_variable(name, b_is_arg, position);
     }
     printf("Parser(parse_factor): Error: Unexpected token %s\n", LEXER_TAG_to_string(peek(lexer)));
     exit(1);

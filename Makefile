@@ -36,5 +36,4 @@ debug:
 
 generate:
 	./$(exec)
-	llc -filetype=obj output.ll -o output.o
-	clang output.o -o output
+	clang main.bc -o output

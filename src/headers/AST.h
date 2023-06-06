@@ -48,7 +48,7 @@ AST *AST_new_break();
 AST *AST_new_noop();
 AST *AST_new_continue();
 AST *AST_new_call(char* name, AST* *arguments, size_t array_size);
-AST *AST_new_variable(char* name, bool is_arg);
+AST *AST_new_variable(char* name, bool is_arg, int arg_index);
 void AST_add_argument(AST* ast, AST* argument);
 void AST_add_child(AST* ast, AST* child);
 // until here
