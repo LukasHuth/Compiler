@@ -139,7 +139,7 @@ void lex(LEXER *lexer)
             }
             else if (isalpha(c))
             {
-                while (isalpha(peek_char(lexer->file)))
+                while (isalpha(peek_char(lexer->file)) || isdigit(peek_char(lexer->file)) || peek_char(lexer->file) == '_')
                 {
                     c = get_char(lexer->file);
                     str_size++;

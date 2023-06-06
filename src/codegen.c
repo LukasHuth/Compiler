@@ -42,7 +42,7 @@ void reallocate_string(char **new, char* format, char *orig)
     sprintf(*new, format, orig);
 }
 
-void init_codegen(FILE *file, AST *ast)
+void init_codegen(AST *ast)
 {
     LLVMInitializeCore(LLVMGetGlobalPassRegistry());
     LLVMInitializeNativeTarget();
@@ -53,7 +53,6 @@ void init_codegen(FILE *file, AST *ast)
     LLVMBuilderRef builder = LLVMCreateBuilder();
     
     CODEGEN *codegen = malloc(sizeof(CODEGEN));
-    codegen->file = file;
     codegen->ast = ast;
 
     codegen_generate(codegen, module, builder);
@@ -66,14 +65,12 @@ void init_codegen(FILE *file, AST *ast)
 void codegen_free(CODEGEN *codegen)
 {
     AST_free(codegen->ast);
-    fclose(codegen->file);
     free(codegen);
 }
 void codegen_generate(CODEGEN *codegen, LLVMModuleRef module, LLVMBuilderRef builder)
 {
     if(codegen == NULL){printf("Codegen is NULL\n");return;}
     if(codegen->ast == NULL){printf("AST is NULL\n");return;}
-    if(codegen->file == NULL){printf("File is NULL\n");return;}
     if(module == NULL){printf("Module is NULL\n");return;}
     if(builder == NULL){printf("Builder is NULL\n");return;}
     AST *ast = codegen->ast;

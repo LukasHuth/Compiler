@@ -16,8 +16,7 @@ int main()
     AST *ast = parse(lexer);
     AST_print(ast);
     syntatic_analysis(ast);
-    FILE* output_file = fopen("output.ll", "w");
-    init_codegen(output_file, ast);
+    init_codegen(ast);
     // codegen_generate(codegen);
     // free everything
     lexer_free(lexer);
