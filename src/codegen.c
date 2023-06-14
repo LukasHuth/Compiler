@@ -136,6 +136,7 @@ void generate_function(AST *ast, LLVMModuleRef module, LLVMBuilderRef builder)
         param_types[i] = type_ref;
     }
     LLVMTypeRef function_type = LLVMFunctionType(LLVMInt32Type(), param_types, param_count, false);
+    free(param_types);
     LLVMValueRef function = LLVMAddFunction(module, function_name, function_type);
     LLVMSetLinkage(function, LLVMExternalLinkage);
     LLVMSetFunctionCallConv(function, LLVMCCallConv);
@@ -210,7 +211,7 @@ LLVMValueRef get_number_type(AST *ast)
     if(is_float)
     {
         printf("----------\nnumber: %f\n", atof(number));
-        value = LLVMConstReal(LLVMFloatType(), atof(number));
+        value = LLVMConstReal(LLVMDoubleType(), atof(number));
         return value;
     } else {
         printf("number: %s\n", number);
@@ -265,12 +266,12 @@ LLVMValueRef generate_std_function_call(AST *ast, InternalInfo *info)
         }
         if(strcmp(typename, "i32") == 0)
         {
-            printf("hallo\n");
+            // printf("hallo\n");
             LLVMValueRef format_str = LLVMBuildGlobalStringPtr(info->builder, "%d\n", "format_str");
             LLVMValueRef args[2] = {format_str, value};
             LLVMValueRef ret = LLVMBuildCall(info->builder, function, args, 2, "ret");
             return ret;
-        } else if(strcmp(typename, "float") == 0)
+        } else if(strcmp(typename, "double") == 0)
         {
             LLVMValueRef function = LLVMGetNamedFunction(info->module, "printf");
             LLVMValueRef format_str = LLVMBuildGlobalStringPtr(info->builder, "%f\n", "format_str");
@@ -361,7 +362,7 @@ LLVMValueRef generate_expression(AST *ast, InternalInfo *info)
         // TODO: Fix problem that will be encountered with Floats
         // value = LLVMConstInt(LLVMInt32Type(), atoi(ast->data.AST_NUMBER.number), 0);
         value = get_number_type(ast);
-        return value;
+        break;
     case AST_VARIABLE:
         if(ast->data.AST_VARIABLE.is_arg)
         {
@@ -380,19 +381,20 @@ LLVMValueRef generate_expression(AST *ast, InternalInfo *info)
         }
         if(value == NULL) return NULL;
         LLVMValueRef ret_value = LLVMBuildLoad(info->builder, value, temp_name);
-        return ret_value;
+        value = ret_value;
+        break;
     case AST_BINARY_OP:
-        return generate_binary_expression(ast, info);
+        value = generate_binary_expression(ast, info);
+        break;
     case AST_CALL:
-        printf("Call begin\n");
-        LLVMValueRef res = generate_function_call(ast, info);
-        printf("Call end\n");
-        return res;
+        value = generate_function_call(ast, info);
+        break;
     default:
         printf("Unknown tag: %d\n", ast->tag);
         break;
     }
-    return NULL;
+    free(temp_name);
+    return value;
 }
 LLVMValueRef generate_binary_operation_with_string(char* op, LLVMValueRef left, LLVMValueRef right, char* temp_name, LLVMBuilderRef builder)
 {
