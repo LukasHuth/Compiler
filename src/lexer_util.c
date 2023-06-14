@@ -39,6 +39,13 @@ LEXER_TOKEN* lexer_new_token(LEXER_TAG tag, char* data)
 bool is_keyword(char* str)
 {
     if (strcmp(str, "int") == 0 ) return true;
+    if (strcmp(str, "char") == 0 ) return true;
+    if (strcmp(str, "string") == 0 ) return true;
+    if (strcmp(str, "bool") == 0 ) return true;
+    if (strcmp(str, "true") == 0 ) return true;
+    if (strcmp(str, "false") == 0 ) return true;
+    if (strcmp(str, "void") == 0 ) return true;
+    if(strcmp(str, "float") == 0) return true;
     if (strcmp(str, "func") == 0 ) return true;
     if (strcmp(str, "return") == 0 ) return true;
     if (strcmp(str, "if") == 0 ) return true;

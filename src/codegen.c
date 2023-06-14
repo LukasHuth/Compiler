@@ -109,6 +109,10 @@ LLVMTypeRef get_type(AST *ast)
     {
         return LLVMInt32Type();
     }
+    if(strcmp(type_name, "float") == 0)
+    {
+        return LLVMDoubleType();
+    }
     else if(strcmp(type_name, "void") == 0)
     {
         return LLVMVoidType();
@@ -264,24 +268,23 @@ LLVMValueRef generate_std_function_call(AST *ast, InternalInfo *info)
             LLVMSetLinkage(function, LLVMExternalLinkage);
             LLVMSetFunctionCallConv(function, LLVMCCallConv);
         }
+
+        LLVMValueRef ret = NULL;
         if(strcmp(typename, "i32") == 0)
         {
             // printf("hallo\n");
             LLVMValueRef format_str = LLVMBuildGlobalStringPtr(info->builder, "%d\n", "format_str");
             LLVMValueRef args[2] = {format_str, value};
-            LLVMValueRef ret = LLVMBuildCall(info->builder, function, args, 2, "ret");
-            return ret;
+            ret = LLVMBuildCall(info->builder, function, args, 2, "ret");
         } else if(strcmp(typename, "double") == 0)
         {
             LLVMValueRef function = LLVMGetNamedFunction(info->module, "printf");
             LLVMValueRef format_str = LLVMBuildGlobalStringPtr(info->builder, "%f\n", "format_str");
             LLVMValueRef args[2] = {format_str, value};
-            LLVMValueRef ret = LLVMBuildCall(info->builder, function, args, 2, "ret");
-            return ret;
-        } else {
-            printf("Unknown type for print\n");
-            return NULL;
+            ret = LLVMBuildCall(info->builder, function, args, 2, "ret");
         }
+        if(ret == NULL) printf("Unknown type for print\n");
+        return ret;
     }
     printf("Unknown std function: %s\n", function_name);
     return NULL;
@@ -334,8 +337,24 @@ void generate_variable_declaration(AST *ast, InternalInfo *info)
 {
     if(ast == NULL){printf("AST is NULL\n");return;}
     if(!isValidInfo(info)){printf("Info is invalid(variable_declaration)\n");return;}
-    LLVMValueRef value = LLVMBuildAlloca(info->builder, LLVMInt32Type(), ast->data.AST_DECLARATION.name);
-    LLVMSetInitializer(value, LLVMConstInt(LLVMInt32Type(), 0, 0));
+    if(ast->tag != AST_DECLARATION){printf("AST is not a declaration\n");return;}
+    LLVMTypeRef type = get_type(ast->data.AST_DECLARATION.type);
+    LLVMValueRef value = LLVMBuildAlloca(info->builder, type, ast->data.AST_DECLARATION.name);
+    if(LLVMGetTypeKind(type) == LLVMIntegerTypeKind)
+    {
+        LLVMSetInitializer(value, LLVMConstInt(type, 0, 0));
+    } else if(LLVMGetTypeKind(type) == LLVMDoubleTypeKind)
+    {
+        LLVMSetInitializer(value, LLVMConstReal(type, 0));
+    } else if(LLVMGetTypeKind(type) == LLVMPointerTypeKind)
+    {
+        LLVMSetInitializer(value, LLVMConstPointerNull(type));
+    }
+    else
+    {
+        printf("Unknown type for variable declaration\n");
+    }
+    // LLVMSetInitializer(value, LLVMConstInt(LLVMInt32Type(), 0, 0));
     info->variable_count++;
     info->variables = realloc(info->variables, sizeof(LLVMValueRef) * info->variable_count);
     info->variables[info->variable_count - 1] = value;
@@ -396,7 +415,7 @@ LLVMValueRef generate_expression(AST *ast, InternalInfo *info)
     free(temp_name);
     return value;
 }
-LLVMValueRef generate_binary_operation_with_string(char* op, LLVMValueRef left, LLVMValueRef right, char* temp_name, LLVMBuilderRef builder)
+LLVMValueRef generate_binary_operation_with_int(char* op, LLVMValueRef left, LLVMValueRef right, char* temp_name, LLVMBuilderRef builder)
 {
     if (strcmp(op, "+") == 0)
     {
@@ -417,6 +436,47 @@ LLVMValueRef generate_binary_operation_with_string(char* op, LLVMValueRef left, 
     else
     {
         printf("Unknown operator: %s\n", op);
+        return NULL;
+    }
+}
+LLVMValueRef generate_binary_operation_with_double(char* op, LLVMValueRef left, LLVMValueRef right, char* temp_name, LLVMBuilderRef builder)
+{
+    if (strcmp(op, "+") == 0)
+    {
+        return LLVMBuildFAdd(builder, left, right, temp_name);
+    }
+    else if (strcmp(op, "-") == 0)
+    {
+        return LLVMBuildFSub(builder, left, right, temp_name);
+    }
+    else if (strcmp(op, "*") == 0)
+    {
+        return LLVMBuildFMul(builder, left, right, temp_name);
+    }
+    else if (strcmp(op, "/") == 0)
+    {
+        return LLVMBuildFDiv(builder, left, right, temp_name);
+    }
+    else
+    {
+        printf("Unknown operator: %s\n", op);
+        return NULL;
+    }
+}
+LLVMValueRef generate_binary_operation_with_string(char* op, LLVMValueRef left, LLVMValueRef right, char* temp_name, LLVMBuilderRef builder)
+{
+    LLVMTypeKind typekind = LLVMGetTypeKind(LLVMTypeOf(left));
+    if(typekind == LLVMIntegerTypeKind)
+    {
+        return generate_binary_operation_with_int(op, left, right, temp_name, builder);
+    }
+    else if(typekind == LLVMDoubleTypeKind)
+    {
+        return generate_binary_operation_with_double(op, left, right, temp_name, builder);
+    }
+    else
+    {
+        printf("Unknown type: %d\n", typekind);
         return NULL;
     }
 }
