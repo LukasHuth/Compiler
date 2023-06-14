@@ -14,7 +14,7 @@ int main()
     lex(lexer);
     lexer_print(lexer);
     AST *ast = parse(lexer);
-    AST_print(ast);
+    // AST_print(ast);
     syntatic_analysis(ast);
     init_codegen(ast);
     // codegen_generate(codegen);

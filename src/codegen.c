@@ -260,10 +260,10 @@ LLVMValueRef generate_std_function_call(AST *ast, InternalInfo *info)
         LLVMValueRef function = LLVMGetNamedFunction(info->module, "printf");
         if(function == NULL)
         {
-            LLVMTypeRef *printf_args = calloc(2, sizeof(LLVMTypeRef));
+            LLVMTypeRef *printf_args = calloc(1, sizeof(LLVMTypeRef));
             printf_args[0] = LLVMPointerType(LLVMInt8Type(), 0);
-            printf_args[1] = type;
-            LLVMTypeRef printf_type = LLVMFunctionType(LLVMInt32Type(), printf_args, 2, true);
+            // printf_args[1] = type;
+            LLVMTypeRef printf_type = LLVMFunctionType(LLVMInt32Type(), printf_args, 1, true);
             function = LLVMAddFunction(info->module, "printf", printf_type);
             LLVMSetLinkage(function, LLVMExternalLinkage);
             LLVMSetFunctionCallConv(function, LLVMCCallConv);
@@ -273,13 +273,13 @@ LLVMValueRef generate_std_function_call(AST *ast, InternalInfo *info)
         if(strcmp(typename, "i32") == 0)
         {
             // printf("hallo\n");
-            LLVMValueRef format_str = LLVMBuildGlobalStringPtr(info->builder, "%d\n", "format_str");
+            LLVMValueRef format_str = LLVMBuildGlobalStringPtr(info->builder, "%d\n", "format_str_d");
             LLVMValueRef args[2] = {format_str, value};
             ret = LLVMBuildCall(info->builder, function, args, 2, "ret");
         } else if(strcmp(typename, "double") == 0)
         {
-            LLVMValueRef function = LLVMGetNamedFunction(info->module, "printf");
-            LLVMValueRef format_str = LLVMBuildGlobalStringPtr(info->builder, "%f\n", "format_str");
+            // LLVMValueRef function = LLVMGetNamedFunction(info->module, "printf");
+            LLVMValueRef format_str = LLVMBuildGlobalStringPtr(info->builder, "%f\n", "format_str_f");
             LLVMValueRef args[2] = {format_str, value};
             ret = LLVMBuildCall(info->builder, function, args, 2, "ret");
         }
@@ -306,7 +306,7 @@ LLVMValueRef generate_function_call(AST *ast, InternalInfo *info)
         if(args[i] == NULL) return NULL;
     }
     char* temp_name = calloc(10, sizeof(char));
-    sprintf(temp_name, "_t%ld", info->temp_count++);
+    sprintf(temp_name, "_%ld", info->temp_count++);
     temp_name = realloc(temp_name, sizeof(char) * (strlen(temp_name) + 1));
     LLVMValueRef result = LLVMBuildCall(info->builder, function, args, argc, temp_name);
     free(args);
@@ -340,21 +340,7 @@ void generate_variable_declaration(AST *ast, InternalInfo *info)
     if(ast->tag != AST_DECLARATION){printf("AST is not a declaration\n");return;}
     LLVMTypeRef type = get_type(ast->data.AST_DECLARATION.type);
     LLVMValueRef value = LLVMBuildAlloca(info->builder, type, ast->data.AST_DECLARATION.name);
-    if(LLVMGetTypeKind(type) == LLVMIntegerTypeKind)
-    {
-        LLVMSetInitializer(value, LLVMConstInt(type, 0, 0));
-    } else if(LLVMGetTypeKind(type) == LLVMDoubleTypeKind)
-    {
-        LLVMSetInitializer(value, LLVMConstReal(type, 0));
-    } else if(LLVMGetTypeKind(type) == LLVMPointerTypeKind)
-    {
-        LLVMSetInitializer(value, LLVMConstPointerNull(type));
-    }
-    else
-    {
-        printf("Unknown type for variable declaration\n");
-    }
-    // LLVMSetInitializer(value, LLVMConstInt(LLVMInt32Type(), 0, 0));
+    LLVMSetInitializer(value, LLVMConstInt(LLVMInt32Type(), 0, 0));
     info->variable_count++;
     info->variables = realloc(info->variables, sizeof(LLVMValueRef) * info->variable_count);
     info->variables[info->variable_count - 1] = value;
@@ -388,7 +374,7 @@ LLVMValueRef generate_expression(AST *ast, InternalInfo *info)
             LLVMValueRef arg = LLVMGetParam(info->function, ast->data.AST_VARIABLE.arg_index);
             return arg;
         }
-        sprintf(temp_name, "_t%ld", info->temp_count++);
+        sprintf(temp_name, "_%ld", info->temp_count++);
         temp_name = realloc(temp_name, sizeof(char) * (strlen(temp_name) + 1));
         value = NULL;
         for(size_t i = 0; i < info->variable_count; i++)
@@ -493,7 +479,7 @@ LLVMValueRef generate_binary_expression(AST *ast, InternalInfo *info)
     if(left == NULL){printf("Left is NULL\n");return NULL;}
     if(right == NULL){printf("Right is NULL\n");return NULL;}
     char* temp_name = calloc(1, sizeof(char*));
-    sprintf(temp_name, "_t%ld", info->temp_count++);
+    sprintf(temp_name, "_%ld", info->temp_count++);
     LLVMValueRef value = generate_binary_operation_with_string(op, left, right, temp_name, info->builder);
     return value;
 }

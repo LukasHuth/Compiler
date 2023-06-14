@@ -49,29 +49,28 @@ void lexer_free(LEXER *lexer)
     free(lexer->tokens);
     free(lexer);
 }
-void lex(LEXER *lexer)
+char* lexer_parse_next(LEXER *lexer, LEXER_TAG *tag)
 {
-    while (!is_eof(lexer->file))
+    char c = get_char(lexer->file);
+    char* str = calloc(2, sizeof(char));
+    str[0] = c;
+    size_t str_size = 2;
+    *tag = LEXER_EOF;
+        
+    switch (c)
     {
-        char c = get_char(lexer->file);
-        char* str = calloc(2, sizeof(char));
-        str[0] = c;
-        size_t str_size = 2;
-        LEXER_TAG tag = LEXER_EOF;
-        switch (c)
-        {
         case ' ':
         case '\n':
         case '\t':
             break;
         case '+':
-            tag = LEXER_PLUS;
+            *tag = LEXER_PLUS;
             break;
         case '<':
-            tag = LEXER_LESS;
+            *tag = LEXER_LESS;
             break;
         case '>':
-            tag = LEXER_GREATER;
+            *tag = LEXER_GREATER;
             break;
         case '-':
         {
@@ -81,47 +80,52 @@ void lex(LEXER *lexer)
                 str = realloc(str, str_size * sizeof(char));
                 str[str_size - 1] = '\0';
                 str[str_size - 2] = '>';
-                tag = LEXER_ARROW;
+                *tag = LEXER_ARROW;
                 break;
             }
-            tag = LEXER_MINUS;
+            *tag = LEXER_MINUS;
             break;
         }
         case '*':
-            tag = LEXER_STAR;
+            *tag = LEXER_STAR;
             break;
         case '/':
-            tag = LEXER_SLASH;
+            if(peek_char(lexer->file) == '/') {
+                while(get_char(lexer->file) != '\n');
+                return lexer_parse_next(lexer, tag);
+                break;
+            }
+            *tag = LEXER_SLASH;
             break;
         case '(':
-            tag = LEXER_OPEN_PAREN;
+            *tag = LEXER_OPEN_PAREN;
             break;
         case ')':
-            tag = LEXER_CLOSE_PAREN;
+            *tag = LEXER_CLOSE_PAREN;
             break;
         case ';':
-            tag = LEXER_SEMICOLON;
+            *tag = LEXER_SEMICOLON;
             break;
         case '=':
-            tag = LEXER_EQUALS;
+            *tag = LEXER_EQUALS;
             break;
         case ',':
-            tag = LEXER_COMMA;
+            *tag = LEXER_COMMA;
             break;
         case ':':
-            tag = LEXER_COLON;
+            *tag = LEXER_COLON;
             break;
         case '{':
-            tag = LEXER_OPEN_BRACE;
+            *tag = LEXER_OPEN_BRACE;
             break;
         case '}':
-            tag = LEXER_CLOSE_BRACE;
+            *tag = LEXER_CLOSE_BRACE;
             break;
         case '[':
-            tag = LEXER_OPEN_BRACKET;
+            *tag = LEXER_OPEN_BRACKET;
             break;
         case ']':
-            tag = LEXER_CLOSE_BRACKET;
+            *tag = LEXER_CLOSE_BRACKET;
             break;
         default:
         {
@@ -135,7 +139,7 @@ void lex(LEXER *lexer)
                     str[str_size - 2] = c;
                     str[str_size - 1] = '\0';
                 }
-                tag = LEXER_NUMBER;
+                *tag = LEXER_NUMBER;
             }
             else if (isalpha(c))
             {
@@ -149,11 +153,11 @@ void lex(LEXER *lexer)
                 }
                 if (is_keyword(str))
                 {
-                    tag = LEXER_KEYWORD;
+                    *tag = LEXER_KEYWORD;
                 }
                 else
                 {
-                    tag = LEXER_IDENTIFIER;
+                    *tag = LEXER_IDENTIFIER;
                 }
             }
             else
@@ -163,7 +167,15 @@ void lex(LEXER *lexer)
             }
         }
         break;
-        }
+    }
+    return str;
+}
+void lex(LEXER *lexer)
+{
+    while (!is_eof(lexer->file))
+    {
+        LEXER_TAG tag;
+        char* str = lexer_parse_next(lexer, &tag);
         if (tag != LEXER_EOF)
         {
             lexer_add_lexer_token(lexer, lexer_new_token(tag, str));

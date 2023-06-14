@@ -37,6 +37,8 @@ char* get_tag_name(AST_TAG tag)
         return "AST_CALL";
     case AST_VARIABLE:
         return "AST_VARIABLE";
+    case AST_NOOP:
+        return "AST_NOOP";
     default:
         printf("AST(get_tag_name): Error: Unknown tag\n");
         return "?";

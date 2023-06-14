@@ -223,6 +223,8 @@ void syntatic_analysis_body(AST *ast, STATE *state, VARIABLE_ARRAY *variables)
     }
     if(ast->tag == AST_CALL)
         return;
+    if(ast->tag == AST_NOOP)
+        return;
     printf("ERROR: unknown node tag (%s)\n", get_tag_name(ast->tag));
     if(ast->tag != AST_NODE)
     {
