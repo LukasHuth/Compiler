@@ -2,6 +2,8 @@
 
 #define InternalInfo struct INTERNAL_INFO
 
+const bool _DEBUG = true;
+
 struct INTERNAL_INFO
 {
     size_t temp_count;
@@ -49,8 +51,13 @@ void init_codegen(AST *ast)
     LLVMInitializeNativeAsmPrinter();
     LLVMInitializeNativeAsmParser();
 
-    LLVMModuleRef module = LLVMModuleCreateWithName("add_module");
+    LLVMModuleRef module = LLVMModuleCreateWithName("new_module");
+    LLVMSetTarget(module, LLVMGetDefaultTargetTriple()); // saet target triple to x86_64-pc-linux-gnu
     LLVMBuilderRef builder = LLVMCreateBuilder();
+
+    LLVMTypeRef printf_args[] = {LLVMPointerType(LLVMInt8Type(), 0)};
+
+    LLVMAddFunction(module, "puts", LLVMFunctionType(LLVMInt32Type(), printf_args, 1, 0));
     
     CODEGEN *codegen = malloc(sizeof(CODEGEN));
     codegen->ast = ast;
@@ -58,6 +65,7 @@ void init_codegen(AST *ast)
     codegen_generate(codegen, module, builder);
 
     LLVMWriteBitcodeToFile(module, "main.bc");
+    if(_DEBUG) LLVMPrintModuleToFile(module, "main.ll", NULL);
     codegen_free(codegen);
     LLVMDisposeBuilder(builder);
     LLVMDisposeModule(module);
@@ -88,15 +96,28 @@ void codegen_generate(CODEGEN *codegen, LLVMModuleRef module, LLVMBuilderRef bui
             break;
         }
     }
-//     char* main_function_name = "start";
-//     fprintf(file, "define i32 @main(i32 %%argc) {\n");
-//     fprintf(file, "%%t0 = call i32 @%s(i32 %%argc)\n", main_function_name);
-//     fprintf(file, "ret i32 %%t0\n");
-//     fprintf(file, "}\n");
 }
 bool file_and_ast_valid(FILE *file, AST *ast)
 {
     return file != NULL && ast != NULL;
+}
+LLVMTypeRef get_type(AST *ast)
+{
+    if(ast == NULL){printf("AST is NULL\n");return NULL;}
+    char* type_name = ast->data.AST_TYPE.name;
+    if(strcmp(type_name, "int") == 0)
+    {
+        return LLVMInt32Type();
+    }
+    else if(strcmp(type_name, "void") == 0)
+    {
+        return LLVMVoidType();
+    }
+    else
+    {
+        printf("Unknown type: %s\n", type_name);
+        return NULL;
+    }
 }
 void generate_function(AST *ast, LLVMModuleRef module, LLVMBuilderRef builder)
 {
@@ -104,16 +125,15 @@ void generate_function(AST *ast, LLVMModuleRef module, LLVMBuilderRef builder)
     if(module == NULL){printf("Module is NULL\n");return;}
     if(builder == NULL){printf("Builder is NULL\n");return;}
     char* function_name = ast->data.AST_FUNCTION.name;
-    // fprintf(file, "define i32 @%s(", function_name);
     unsigned int param_count = ast->data.AST_FUNCTION.array_size;
     LLVMTypeRef *param_types = malloc(sizeof(LLVMTypeRef) * param_count);
     for(unsigned int i = 0; i < param_count; i++)
     {
-        // AST *child = ast->data.AST_FUNCTION.arguments[i];
-        // char* name = child->data.AST_ARGUMENT.name;
-        // AST *type = child->data.AST_ARGUMENT.type;
-        // char* type_name = type->data.AST_TYPE.name;
-        param_types[i] = LLVMInt32Type();
+        AST *child = ast->data.AST_FUNCTION.arguments[i];
+        AST *type = child->data.AST_ARGUMENT.type;
+        LLVMTypeRef type_ref = get_type(type);
+        if(type_ref == NULL){printf("Type is NULL\n");return;}
+        param_types[i] = type_ref;
     }
     LLVMTypeRef function_type = LLVMFunctionType(LLVMInt32Type(), param_types, param_count, false);
     LLVMValueRef function = LLVMAddFunction(module, function_name, function_type);
@@ -121,18 +141,6 @@ void generate_function(AST *ast, LLVMModuleRef module, LLVMBuilderRef builder)
     LLVMSetFunctionCallConv(function, LLVMCCallConv);
     LLVMBasicBlockRef entry = LLVMAppendBasicBlock(function, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
-
-    /*// only needed if i dont implement the index of the arguments in the AST
-    for(size_t i = 0; i < param_count; i++)
-    {
-        AST *child = ast->data.AST_FUNCTION.arguments[i];
-        char* name = child->data.AST_ARGUMENT.name;
-        LLVMValueRef variable = LLVMBuildAlloca(builder, LLVMInt32Type(), name);
-        LLVMSetAlignment(variable, 4);
-        LLVMValueRef argument = LLVMGetParam(function, i);
-        LLVMBuildStore(builder, argument, variable);
-    }
-    */
     InternalInfo *info = malloc(sizeof(InternalInfo));
     info->builder = builder;
     info->temp_count = 0;
@@ -172,7 +180,9 @@ void generate_function_body(AST *ast, InternalInfo *info)
             generate_variable_assignment(child, info);
             break;
         case AST_CALL:
+            printf("Call begin\n");
             generate_function_call(child, info);
+            printf("Call end\n");
             break;
         default:
             printf("Unknown tag: %d\n", child->tag);
@@ -180,12 +190,108 @@ void generate_function_body(AST *ast, InternalInfo *info)
         }
     }
 }
+LLVMValueRef get_number_type(AST *ast)
+{
+    if(ast == NULL) return NULL;
+    char* number = ast->data.AST_NUMBER.number;
+    float f;
+    (void)sscanf(number, "%f", &f);
+    LLVMValueRef value = NULL;
+    bool is_float = false;
+    for(size_t i = 0; i < strlen(number); i++)
+    {
+        if(number[i] == '.')
+        {
+            is_float = true;
+            break;
+        }
+    }
+
+    if(is_float)
+    {
+        printf("----------\nnumber: %f\n", atof(number));
+        value = LLVMConstReal(LLVMFloatType(), atof(number));
+        return value;
+    } else {
+        printf("number: %s\n", number);
+        value = LLVMConstInt(LLVMInt32Type(), atoi(number), 0);
+    }
+    return value;
+}
+bool is_std_function(char *name)
+{
+    if(strcmp(name, "print") == 0) return true;
+    return false;
+}
+LLVMTypeRef get_variable_type(char* name, InternalInfo *info)
+{
+    if(!isValidInfo(info)){printf("Info is invalid (variable_type)\n");return NULL;}
+    for(size_t i = 0; i < info->variable_count; i++)
+    {
+        if(strcmp(name, LLVMGetValueName(info->variables[i])) == 0)
+        {
+            return LLVMTypeOf(info->variables[i]);
+        }
+    }
+    return NULL;
+}
+LLVMValueRef generate_std_function_call(AST *ast, InternalInfo *info)
+{
+    if(!isValidInfo(info)){printf("Info is invalid(std function call)\n");return NULL;}
+    if(ast == NULL){printf("AST is NULL\n");return NULL;}
+    if(ast->tag != AST_CALL){printf("AST is not a call\n");return NULL;}
+    char *function_name = ast->data.AST_CALL.name;
+    AST **arguments = ast->data.AST_CALL.arguments;
+    size_t argc = ast->data.AST_CALL.array_size;
+    if(strcmp(function_name, "print") == 0)
+    {
+        if(argc != 1){printf("Wrong number of arguments for print\n");return NULL;}
+        AST *argument = arguments[0];
+        LLVMValueRef value = generate_expression(argument, info);
+        if(value == NULL){printf("Value is NULL\n");return NULL;}
+        LLVMTypeRef type = LLVMTypeOf(value);
+        char* typename = LLVMPrintTypeToString(type);
+        if(type == NULL){printf("Type is NULL\n");return NULL;}
+        LLVMValueRef function = LLVMGetNamedFunction(info->module, "printf");
+        if(function == NULL)
+        {
+            LLVMTypeRef *printf_args = calloc(2, sizeof(LLVMTypeRef));
+            printf_args[0] = LLVMPointerType(LLVMInt8Type(), 0);
+            printf_args[1] = type;
+            LLVMTypeRef printf_type = LLVMFunctionType(LLVMInt32Type(), printf_args, 2, true);
+            function = LLVMAddFunction(info->module, "printf", printf_type);
+            LLVMSetLinkage(function, LLVMExternalLinkage);
+            LLVMSetFunctionCallConv(function, LLVMCCallConv);
+        }
+        if(strcmp(typename, "i32") == 0)
+        {
+            printf("hallo\n");
+            LLVMValueRef format_str = LLVMBuildGlobalStringPtr(info->builder, "%d\n", "format_str");
+            LLVMValueRef args[2] = {format_str, value};
+            LLVMValueRef ret = LLVMBuildCall(info->builder, function, args, 2, "ret");
+            return ret;
+        } else if(strcmp(typename, "float") == 0)
+        {
+            LLVMValueRef function = LLVMGetNamedFunction(info->module, "printf");
+            LLVMValueRef format_str = LLVMBuildGlobalStringPtr(info->builder, "%f\n", "format_str");
+            LLVMValueRef args[2] = {format_str, value};
+            LLVMValueRef ret = LLVMBuildCall(info->builder, function, args, 2, "ret");
+            return ret;
+        } else {
+            printf("Unknown type for print\n");
+            return NULL;
+        }
+    }
+    printf("Unknown std function: %s\n", function_name);
+    return NULL;
+}
 LLVMValueRef generate_function_call(AST *ast, InternalInfo *info)
 {
     if(!isValidInfo(info)){printf("Info is invalid(function call)\n");return NULL;}
     if(ast == NULL){printf("AST is NULL\n");return NULL;}
     if(ast->tag != AST_CALL){printf("AST is not a call\n");return NULL;}
     char *function_name = ast->data.AST_CALL.name;
+    if(is_std_function(function_name)) return generate_std_function_call(ast, info);
     AST **arguments = ast->data.AST_CALL.arguments;
     size_t argc = ast->data.AST_CALL.array_size;
     LLVMValueRef function = LLVMGetNamedFunction(info->module, function_name);
@@ -201,21 +307,6 @@ LLVMValueRef generate_function_call(AST *ast, InternalInfo *info)
     LLVMValueRef result = LLVMBuildCall(info->builder, function, args, argc, temp_name);
     free(args);
     return result;
-    // fprintf(file, "%%t%ld = call i32 @%s(", *temp_count, function_name);
-    // for(size_t i = 0; i < ast->data.AST_CALL.array_size; i++)
-    // {
-    //     fprintf(file, "i32 %s", arguments[i]);
-    //     if(i < ast->data.AST_CALL.array_size - 1)
-    //     {
-    //         fprintf(file, ", ");
-    //     }
-    // }
-    // fprintf(file, ")\n");
-    // for(size_t i = 0; i < ast->data.AST_CALL.array_size; i++)
-    // {
-    //     free(arguments[i]);
-    // }
-    // free(arguments);
 }
 void generate_variable_assignment(AST *ast, InternalInfo *info)
 {
@@ -260,7 +351,6 @@ void generate_return(AST *ast, InternalInfo* info)
 }
 LLVMValueRef generate_expression(AST *ast, InternalInfo *info)
 {
-    // if(!file_and_ast_valid(file, ast)) return "";
     if(ast == NULL) return NULL;
     if(!isValidInfo(info)) return NULL;
     char* temp_name = calloc(10, sizeof(char));
@@ -269,7 +359,8 @@ LLVMValueRef generate_expression(AST *ast, InternalInfo *info)
     {
     case AST_NUMBER:
         // TODO: Fix problem that will be encountered with Floats
-        value = LLVMConstInt(LLVMInt32Type(), atoi(ast->data.AST_NUMBER.number), 0);
+        // value = LLVMConstInt(LLVMInt32Type(), atoi(ast->data.AST_NUMBER.number), 0);
+        value = get_number_type(ast);
         return value;
     case AST_VARIABLE:
         if(ast->data.AST_VARIABLE.is_arg)
@@ -293,7 +384,10 @@ LLVMValueRef generate_expression(AST *ast, InternalInfo *info)
     case AST_BINARY_OP:
         return generate_binary_expression(ast, info);
     case AST_CALL:
-        return generate_function_call(ast, info);
+        printf("Call begin\n");
+        LLVMValueRef res = generate_function_call(ast, info);
+        printf("Call end\n");
+        return res;
     default:
         printf("Unknown tag: %d\n", ast->tag);
         break;

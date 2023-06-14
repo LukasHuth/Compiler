@@ -7,6 +7,7 @@
 #include "llvm-c/Target.h"
 #include "llvm-c/ExecutionEngine.h"
 #include "llvm-c/BitWriter.h"
+#include "llvm-c/IRReader.h"
 void reallocate_string(char **new, char* format, char *orig);
 
 typedef struct

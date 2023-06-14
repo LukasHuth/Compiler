@@ -114,12 +114,6 @@ AST *parse_expr(LEXER *lexer, AST* function)
         }
         if(peek(lexer) == LEXER_OPEN_BRACKET)
         {
-            // eat(lexer, LEXER_OPEN_BRACKET);
-            // AST* index = parse_term(lexer);
-            // eat(lexer, LEXER_CLOSE_BRACKET);
-            // eat(lexer, LEXER_EQUALS);
-            // AST* value = parse_term(lexer);
-            // return AST_new_index_assign(name, index, value);
             printf("Parser(parse_expr): Error: Index assignment not implemented\n");
             exit(2);
         }

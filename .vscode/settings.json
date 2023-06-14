@@ -15,7 +15,8 @@
         "type_traits": "c",
         "utility": "c",
         "optional": "c",
-        "system_error": "c"
+        "system_error": "c",
+        "ratio": "c"
     },
     "configurationProvider": "ms-vscode.makefile-tools",
     "C_Cpp.default.configurationProvider": "ms-vscode.makefile-tools",
