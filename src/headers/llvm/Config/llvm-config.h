@@ -8,7 +8,7 @@
 /*===----------------------------------------------------------------------===*/
 
 /* This file enumerates variables from the LLVM configuration so that they
-   can be in exported headers and won't override package specific directives.
+   can be in exported headers and won't override package specific directives.   
    This is a C header that can be included in the llvm-c headers. */
 
 #ifndef LLVM_CONFIG_H

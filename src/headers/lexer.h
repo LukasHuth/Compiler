@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <string>
 #define LEXER_TAG enum LEXER_TAG
 // typedef enum LEXER_TAG LEXER_TAG;
 LEXER_TAG {
@@ -44,5 +45,5 @@ LEXER* init_lexer(FILE* file);
 void lex(LEXER *lexer);
 void lexer_print(LEXER *lexer);
 void lexer_free(LEXER *lexer);
-char *LEXER_TAG_to_string(LEXER_TAG tag);
+std::string LEXER_TAG_to_string(LEXER_TAG tag);
 #endif

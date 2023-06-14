@@ -1,7 +1,7 @@
 #ifndef H_AST_TAG
 #define H_AST_TAG
 #include <stdio.h>
-#include <string.h>
+#include <string>
 typedef enum {
   AST_NUMBER,
   AST_BINARY_OP,
@@ -23,6 +23,6 @@ typedef enum {
   AST_VARIABLE,
   AST_NOOP,
 } AST_TAG;
-char* get_tag_name(AST_TAG tag);
-int tag_get_priority(char* tag);
+std::string get_tag_name(AST_TAG tag);
+int tag_get_priority(std::string tag);
 #endif
