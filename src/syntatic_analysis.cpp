@@ -225,7 +225,7 @@ void syntatic_analysis_body(AST *ast, STATE *state, VARIABLE_ARRAY *variables)
         return;
     if(ast->tag == AST_NOOP)
         return;
-    printf("ERROR: unknown node tag (%s)\n", get_tag_name(ast->tag));
+    printf("ERROR: unknown node tag (%s)\n", get_tag_name(ast->tag).c_str());
     if(ast->tag != AST_NODE)
     {
         printf("ERROR: node is not a AST_NODE\n");

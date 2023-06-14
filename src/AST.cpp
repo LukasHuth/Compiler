@@ -248,7 +248,7 @@ void AST_print(AST *ast)
         printf("%s", ast->data.AST_VARIABLE.name);
         break;
     default:
-        printf("AST(print): Error: Unknown tag (%s)\n", get_tag_name(ast->tag));
+        printf("AST(print): Error: Unknown tag (%s)\n", get_tag_name(ast->tag).c_str());
         break;
     }
 }
@@ -328,7 +328,7 @@ void AST_free(AST *ast)
         if(DEBUG) printf("free tuple\n");
         break;
     case AST_EXPR:
-        if(DEBUG) printf("free expr(%s)\n", get_tag_name(ast->data.AST_EXPR.expr->tag));
+        if(DEBUG) printf("free expr(%s)\n", get_tag_name(ast->data.AST_EXPR.expr->tag).c_str());
         AST_free(ast->data.AST_EXPR.expr);
         if(DEBUG) printf("free expr\n");
         break;
