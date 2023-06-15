@@ -14,17 +14,20 @@ typedef struct {
     size_t size;
 } VARIABLE_ARRAY;
 
+// TODO: convert to class
 typedef struct {
     AST* *attributes;
     size_t size;
     char* name;
 } FUNC;
 
+// TODO: convert to class
 typedef struct {
     FUNC* *functions;
     size_t size;
 } FUNC_ARRAY;
 
+// TODO: convert to class
 typedef struct {
     VARIABLE_ARRAY *variables;
     FUNC_ARRAY *functions;

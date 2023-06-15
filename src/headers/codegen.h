@@ -22,6 +22,4 @@ namespace Codegen
     void Free(Codegen *codegen);
 }
 
-// void codegen_generate(CODEGEN *codegen);
-
 #endif

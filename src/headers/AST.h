@@ -21,12 +21,9 @@ class AST {
       struct RETURN { AST *expr; } RETURN;
       struct FUNCTION { char* name; AST *type; AST *body; } FUNCTION;
       struct TYPE { char* name; bool is_array; AST* array_size; } TYPE;
-      struct VAR_MANIP { char* name; AST *ast; } VAR_MANIP; //same
-      // struct ARGUMENT { char* name; AST *type; } ARGUMENT; //same
-      // struct DECLARATION { char* name; AST *type; } DECLARATION; //same
-      // struct ASSIGN { char* name; AST *value; } ASSIGN; //same
-      struct IF { AST *condition; AST *body; AST *else_body; } IF; // same
-      struct WHILE { AST *condition; AST *body; } WHILE; // same
+      struct VAR_MANIP { char* name; AST *ast; } VAR_MANIP;
+      struct IF { AST *condition; AST *body; AST *else_body; } IF;
+      struct WHILE { AST *condition; AST *body; } WHILE;
       struct FOR { AST *init; AST *condition; AST *increment; AST *body; } FOR;
       struct CALL { char* name; } CALL;
       struct VARIABLE { char* name; bool is_arg; int arg_index; } VARIABLE;

@@ -6,7 +6,6 @@
 #include <string>
 namespace Lexer
 {
-    // #define TAG enum TAG
     enum Tag {
         NUMBER,
         PLUS,

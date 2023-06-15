@@ -151,13 +151,11 @@ namespace Lexer
         {
             Tag tag = COMMA;
             char* str = parse_next(lexer, &tag);
-            // printf("Tag: %s", Tag_to_string(tag).c_str());
             if (tag != EOFI)
             {
                 add_lexer_token(lexer, new_token(tag, str));
             }
             free(str);
-            // if(tag ==  EOFI) break;
         }
     }
     std::string Tag_to_string(Tag tag)

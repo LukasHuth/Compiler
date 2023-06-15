@@ -153,7 +153,6 @@ void syntatic_analysis_body(AST *ast, STATE *state, VARIABLE_ARRAY *variables)
             exit(17); // ERROR CODE 17
         }
         VARIABLE *variable = create_variable(ast->data.VAR_MANIP.ast, ast->data.VAR_MANIP.name);
-        // add_variable(variables, create_variable(ast->data.DECLARATION.type, ast->data.DECLARATION.name));
         variable_array_add_variable(variables, variable);
         return;
     }
@@ -289,7 +288,7 @@ void syntatic_analysis_if(AST *ast, STATE *state, VARIABLE_ARRAY *variables)
         state->returned = false;
     }
     state->ifcount--;
-    // add else body option
+    // TODO: add else body option
     /*
     if(ast->data.IF.else_body != NULL)
     {

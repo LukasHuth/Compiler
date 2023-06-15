@@ -80,7 +80,6 @@ namespace Codegen
         if(module == NULL){printf("Module is NULL\n");return;}
         if(builder == NULL){printf("Builder is NULL\n");return;}
         AST *ast = codegen->ast;
-        // FILE *file = codegen->file;
         for(size_t i = 0; i < ast->children.size(); i++)
         {
             AST *child = ast->children[i];
@@ -257,7 +256,6 @@ namespace Codegen
             {
                 LLVMTypeRef *printf_args = (LLVMTypeRef*) calloc(1, sizeof(LLVMTypeRef));
                 printf_args[0] = LLVMPointerType(LLVMInt8Type(), 0);
-                // printf_args[1] = type;
                 LLVMTypeRef printf_type = LLVMFunctionType(LLVMInt32Type(), printf_args, 1, true);
                 free(printf_args);
                 function = LLVMAddFunction(info->module, "printf", printf_type);
@@ -268,13 +266,11 @@ namespace Codegen
             LLVMValueRef ret = NULL;
             if(strcmp(type_name, "i32") == 0)
             {
-                // printf("hallo\n");
                 LLVMValueRef format_str = LLVMBuildGlobalStringPtr(info->builder, "%d\n", "format_str_d");
                 LLVMValueRef args[2] = {format_str, value};
                 ret = LLVMBuildCall(info->builder, function, args, 2, "ret");
             } else if(strcmp(type_name, "double") == 0)
             {
-                // LLVMValueRef function = LLVMGetNamedFunction(info->module, "printf");
                 LLVMValueRef format_str = LLVMBuildGlobalStringPtr(info->builder, "%f\n", "format_str_f");
                 LLVMValueRef args[2] = {format_str, value};
                 ret = LLVMBuildCall(info->builder, function, args, 2, "ret");
@@ -293,7 +289,6 @@ namespace Codegen
         if(ast->tag != Ast::CALL){printf("AST is not a call\n");return NULL;}
         char *function_name = ast->data.CALL.name;
         if(is_std_function(function_name)) return generate_std_function_call(ast, info);
-        // AST **arguments = ast->data.CALL.arguments;
         size_t argc = ast->arguments.size();
         LLVMValueRef function = LLVMGetNamedFunction(info->module, function_name);
         LLVMValueRef* args = (LLVMValueRef*) calloc(argc, sizeof(LLVMValueRef));
@@ -319,7 +314,6 @@ namespace Codegen
         AST *expr = ast->data.VAR_MANIP.ast;
         LLVMValueRef value = generate_expression(expr, info);
         if(value == NULL) return;
-        // value = iterate vars
         LLVMValueRef variable = NULL;
         for(size_t i = 0; i < info->variable_count; i++)
         {
@@ -383,7 +377,6 @@ namespace Codegen
                 value = LLVMBuildLoad(info->builder, value, temp_name);
                 free(temp_name);
                 return value;
-                // break;
             case Ast::BINARY_OP:
                 value = generate_binary_expression(ast, info);
                 break;
