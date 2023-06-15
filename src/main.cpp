@@ -2,7 +2,7 @@
 
 int main()
 {
-    printf("Hello World!(better)\n");
+    // printf("Hello World!(better)\n");
     const char* filename = "test.txt";
     FILE* file = fopen(filename, "r");
     if (file == NULL)
@@ -10,16 +10,17 @@ int main()
         printf("Could not open file %s\n", filename);
         return 1;
     }
-    LEXER *lexer = init_lexer(file);
-    lex(lexer);
-    lexer_print(lexer);
-    AST *ast = parse(lexer);
+    Lexer::Lexer *lexer = Lexer::init(file);
+    Lexer::lex(lexer);
+    // printf("Hallo\n");
+    // lexer_print(lexer);
+    AST *ast = Parser::parse(lexer);
     // AST_print(ast);
     syntatic_analysis(ast);
-    init_codegen(ast);
+    Codegen::init(ast);
     // codegen_generate(codegen);
     // free everything
-    lexer_free(lexer);
+    Lexer::Free(lexer);
     fclose(file);
     return 0;
 }

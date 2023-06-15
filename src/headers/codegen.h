@@ -9,16 +9,19 @@
 #include "llvm-c/ExecutionEngine.h"
 #include "llvm-c/BitWriter.h"
 #include "llvm-c/IRReader.h"
-void reallocate_string(char** _new, char* format, char *orig);
 
-typedef struct
+namespace Codegen
 {
-    FILE *file;
-    AST *ast;
-} CODEGEN;
+    typedef struct
+    {
+        FILE *file;
+        AST *ast;
+    } Codegen;
 
-void init_codegen(AST *ast);
-void codegen_free(CODEGEN *codegen);
+    void init(AST *ast);
+    void Free(Codegen *codegen);
+}
+
 // void codegen_generate(CODEGEN *codegen);
 
 #endif

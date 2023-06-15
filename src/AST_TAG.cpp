@@ -1,56 +1,59 @@
 #include "headers/AST_TAG.h"
-std::string get_tag_name(AST_TAG tag)
+namespace Ast
 {
-    switch (tag)
+    std::string get_tag_name(Tag tag)
     {
-    case AST_NUMBER:
-        return "AST_NUMBER";
-    case AST_BINARY_OP:
-        return "AST_BINARY_OP";
-    case AST_EXPR:
-        return "AST_EXPR";
-    case AST_RETURN:
-        return "AST_RETURN";
-    case AST_ARGUMENT:
-        return "AST_ARGUMENT";
-    case AST_FUNCTION:
-        return "AST_FUNCTION";
-    case AST_NODE:
-        return "AST_NODE";
-    case AST_TYPE:
-        return "AST_TYPE";
-    case AST_DECLARATION:
-        return "AST_DECLARATION";
-    case AST_ASSIGN:
-        return "AST_ASSIGN";
-    case AST_IF:
-        return "AST_IF";
-    case AST_WHILE:
-        return "AST_WHILE";
-    case AST_FOR:
-        return "AST_FOR";
-    case AST_BREAK:
-        return "AST_BREAK";
-    case AST_CONTINUE:
-        return "AST_CONTINUE";
-    case AST_CALL:
-        return "AST_CALL";
-    case AST_VARIABLE:
-        return "AST_VARIABLE";
-    case AST_NOOP:
-        return "AST_NOOP";
-    default:
-        printf("AST(get_tag_name): Error: Unknown tag\n");
-        return "?";
+        switch (tag)
+        {
+        case NUMBER:
+            return "NUMBER";
+        case BINARY_OP:
+            return "BINARY_OP";
+        case EXPR:
+            return "EXPR";
+        case RETURN:
+            return "RETURN";
+        case ARGUMENT:
+            return "ARGUMENT";
+        case FUNCTION:
+            return "FUNCTION";
+        case NODE:
+            return "NODE";
+        case TYPE:
+            return "TYPE";
+        case DECLARATION:
+            return "DECLARATION";
+        case ASSIGN:
+            return "ASSIGN";
+        case IF:
+            return "IF";
+        case WHILE:
+            return "WHILE";
+        case FOR:
+            return "FOR";
+        case BREAK:
+            return "BREAK";
+        case CONTINUE:
+            return "CONTINUE";
+        case CALL:
+            return "CALL";
+        case VARIABLE:
+            return "VARIABLE";
+        case NOOP:
+            return "NOOP";
+        default:
+            printf("AST(get_tag_name): Error: Unknown tag\n");
+            return "?";
+        }
     }
-}
-int tag_get_priority(std::string tag)
-{
-    if (tag == "==")
-        return 1;
-    if(tag == "+" || tag == "-")
-        return 2;
-    if(tag == "*" || tag == "/")
-        return 3;
-    return -1;
+    int tag_get_priority(std::string tag)
+    {
+        if (tag == "==")
+            return 1;
+        if(tag == "+" || tag == "-")
+            return 2;
+        if(tag == "*" || tag == "/")
+            return 3;
+        return -1;
+    }
 }

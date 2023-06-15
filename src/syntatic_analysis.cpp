@@ -22,16 +22,16 @@ void syntatic_analysis(AST *node)
 {
     if(node == NULL)
         return;
-    if(node->tag != AST_NODE)
+    if(node->tag != Ast::NODE)
     {
-        printf("ERROR: node is not a AST_NODE\n");
+        printf("ERROR: node is not a NODE\n");
         exit(10); // ERROR CODE 10
     }
     SYMBOL_TABLE *table = create_symbol_table();
     bool has_main = false;
-    for(size_t i = 0; i < node->data.AST_NODE.array_size; i++)
+    for(size_t i = 0; i < node->data.NODE.array_size; i++)
     {
-        bool is_main = syntatic_analysis_children(node->data.AST_NODE.children[i], table);
+        bool is_main = syntatic_analysis_children(node->data.NODE.children[i], table);
         if(is_main)
             has_main = true;
     }
@@ -46,24 +46,24 @@ bool syntatic_analysis_children(AST *ast, SYMBOL_TABLE *table)
 {
     if(ast == NULL)
         return false;
-    if(ast->tag == AST_IMPORT)
+    if(ast->tag == Ast::IMPORT)
         return false;
-    if(ast->tag != AST_FUNCTION)
+    if(ast->tag != Ast::FUNCTION)
     {
-        printf("ERROR: node is not a AST_FUNCTION\n");
+        printf("ERROR: node is not a FUNCTION\n");
         exit(11); // ERROR CODE 11
     }
     STATE *state = create_state();
     state->in_function = true;
     VARIABLE_ARRAY *variables = create_variable_array();
     table->functions->functions = (FUNC**) realloc(table->functions->functions, (table->functions->size + 1) * sizeof(FUNC*));
-    table->functions->functions[table->functions->size] = create_function(ast->data.AST_FUNCTION.name);
+    table->functions->functions[table->functions->size] = create_function(ast->data.FUNCTION.name);
     table->functions->size++;
     table->variables = variables;
     bool is_main = syntatic_analysis_function(ast, state, variables);
     if(!state->returned)
     {
-        printf("ERROR: function %s does not return\n", ast->data.AST_FUNCTION.name);
+        printf("ERROR: function %s does not return\n", ast->data.FUNCTION.name);
         exit(17); // ERROR CODE 17
     }
     free_variable_array(variables);
@@ -85,49 +85,49 @@ bool syntatic_analysis_function(AST *ast, STATE *state, VARIABLE_ARRAY *variable
 {
     if(ast == NULL)
         return false;
-    if(ast->tag != AST_FUNCTION)
+    if(ast->tag != Ast::FUNCTION)
     {
-        printf("ERROR: node is not a AST_FUNCTION\n");
+        printf("ERROR: node is not a FUNCTION\n");
         exit(11); // ERROR CODE 11
     }
-    if(ast->data.AST_FUNCTION.name == NULL)
+    if(ast->data.FUNCTION.name == NULL)
     {
         printf("ERROR: function name is NULL\n");
         exit(12); // ERROR CODE 12
     }
-    if(ast->data.AST_FUNCTION.type == NULL)
+    if(ast->data.FUNCTION.type == NULL)
     {
         printf("ERROR: function type is NULL\n");
         exit(13); // ERROR CODE 13
     }
-    if(ast->data.AST_FUNCTION.body == NULL)
+    if(ast->data.FUNCTION.body == NULL)
     {
         printf("ERROR: function body is NULL\n");
         exit(14); // ERROR CODE 14
     }
-    if(ast->data.AST_FUNCTION.arguments == NULL)
+    if(ast->data.FUNCTION.arguments == NULL)
     {
         printf("ERROR: function arguments is NULL\n");
         exit(15); // ERROR CODE 15
     }
-    char* function_name = ast->data.AST_FUNCTION.name;
+    char* function_name = ast->data.FUNCTION.name;
     bool is_main = strcmp(function_name, "main") == 0;
     if(is_main)
     {
-        if(strcmp(ast->data.AST_FUNCTION.type->data.AST_TYPE.name, "int") != 0)
+        if(strcmp(ast->data.FUNCTION.type->data.TYPE.name, "int") != 0)
         {
             printf("ERROR: main function must return int\n");
             exit(15); // ERROR CODE 15
         }
     }
-    AST *body = ast->data.AST_FUNCTION.body;
-    if(body->tag != AST_NODE)
+    AST *body = ast->data.FUNCTION.body;
+    if(body->tag != Ast::NODE)
     {
-        printf("ERROR: function body is not a AST_NODE\n");
+        printf("ERROR: function body is not a NODE\n");
         exit(16); // ERROR CODE 16
     }
-    for(size_t i = 0; i < body->data.AST_NODE.array_size; i++)
-        syntatic_analysis_body(body->data.AST_NODE.children[i], state, variables);
+    for(size_t i = 0; i < body->data.NODE.array_size; i++)
+        syntatic_analysis_body(body->data.NODE.children[i], state, variables);
     return is_main;
 }
 void syntatic_analysis_body(AST *ast, STATE *state, VARIABLE_ARRAY *variables)
@@ -140,70 +140,70 @@ void syntatic_analysis_body(AST *ast, STATE *state, VARIABLE_ARRAY *variables)
     }
     if(ast == NULL)
         return;
-    if(ast->tag == AST_DECLARATION)
+    if(ast->tag == Ast::DECLARATION)
     {
-        if(ast->data.AST_DECLARATION.type == NULL)
+        if(ast->data.DECLARATION.type == NULL)
         {
             printf("ERROR: declaration type is NULL\n");
             exit(12); // ERROR CODE 12
         }
-        if(ast->data.AST_DECLARATION.name == NULL)
+        if(ast->data.DECLARATION.name == NULL)
         {
             printf("ERROR: declaration name is NULL\n");
             exit(12); // ERROR CODE 12
         }
-        if(variable_array_has_variable(variables, ast->data.AST_DECLARATION.name))
+        if(variable_array_has_variable(variables, ast->data.DECLARATION.name))
         {
-            printf("ERROR: variable %s already declared\n", ast->data.AST_DECLARATION.name);
+            printf("ERROR: variable %s already declared\n", ast->data.DECLARATION.name);
             exit(17); // ERROR CODE 17
         }
-        VARIABLE *variable = create_variable(ast->data.AST_DECLARATION.type, ast->data.AST_DECLARATION.name);
-        // add_variable(variables, create_variable(ast->data.AST_DECLARATION.type, ast->data.AST_DECLARATION.name));
+        VARIABLE *variable = create_variable(ast->data.DECLARATION.type, ast->data.DECLARATION.name);
+        // add_variable(variables, create_variable(ast->data.DECLARATION.type, ast->data.DECLARATION.name));
         variable_array_add_variable(variables, variable);
         return;
     }
-    if(ast->tag == AST_ASSIGN)
+    if(ast->tag == Ast::ASSIGN)
     {
-        if(ast->data.AST_ASSIGN.name == NULL)
+        if(ast->data.ASSIGN.name == NULL)
         {
             printf("ERROR: assign name is NULL\n");
             exit(12); // ERROR CODE 12
         }
-        if(!variable_array_has_variable(variables, ast->data.AST_ASSIGN.name))
+        if(!variable_array_has_variable(variables, ast->data.ASSIGN.name))
         {
-            printf("ERROR: variable %s not declared\n", ast->data.AST_ASSIGN.name);
+            printf("ERROR: variable %s not declared\n", ast->data.ASSIGN.name);
             exit(17); // ERROR CODE 17
         }
-        if(ast->data.AST_ASSIGN.value == NULL)
+        if(ast->data.ASSIGN.value == NULL)
         {
             printf("ERROR: assign value is NULL\n");
             exit(12); // ERROR CODE 12
         }
-        if(!has_same_type(ast->data.AST_ASSIGN.value, variable_array_get_variable(variables, ast->data.AST_ASSIGN.name)->type))
+        if(!has_same_type(ast->data.ASSIGN.value, variable_array_get_variable(variables, ast->data.ASSIGN.name)->type))
         {
-            printf("ERROR: variable %s has different type\n", ast->data.AST_ASSIGN.name);
+            printf("ERROR: variable %s has different type\n", ast->data.ASSIGN.name);
             exit(17); // ERROR CODE 17
         }
         return;
     }
-    if(ast->tag == AST_RETURN)
+    if(ast->tag == Ast::RETURN)
     {
         state->returned = true;
         return;
     }
-    if(ast->tag == AST_IF)
+    if(ast->tag == Ast::IF)
     {
         syntatic_analysis_if(ast, state, variables);
         return;
     }
-    if(ast->tag == AST_WHILE)
+    if(ast->tag == Ast::WHILE)
     {
         syntatic_analysis_while(ast, state, variables);
         return;
     }
-    if(ast->tag == AST_FOR)
+    if(ast->tag == Ast::FOR)
         return;
-    if(ast->tag == AST_BREAK)
+    if(ast->tag == Ast::BREAK)
     {
         if(state->whilecount == 0 && state->forcount == 0)
         {
@@ -212,7 +212,7 @@ void syntatic_analysis_body(AST *ast, STATE *state, VARIABLE_ARRAY *variables)
         }
         return;
     }
-    if(ast->tag == AST_CONTINUE)
+    if(ast->tag == Ast::CONTINUE)
     {
         if(state->whilecount == 0 && state->forcount == 0)
         {
@@ -221,14 +221,14 @@ void syntatic_analysis_body(AST *ast, STATE *state, VARIABLE_ARRAY *variables)
         }
         return;
     }
-    if(ast->tag == AST_CALL)
+    if(ast->tag == Ast::CALL)
         return;
-    if(ast->tag == AST_NOOP)
+    if(ast->tag == Ast::NOOP)
         return;
     printf("ERROR: unknown node tag (%s)\n", get_tag_name(ast->tag).c_str());
-    if(ast->tag != AST_NODE)
+    if(ast->tag != Ast::NODE)
     {
-        printf("ERROR: node is not a AST_NODE\n");
+        printf("ERROR: node is not a NODE\n");
         exit(17); // ERROR CODE 17
     }
 }
@@ -236,76 +236,76 @@ void syntatic_analysis_while(AST *ast, STATE *state, VARIABLE_ARRAY *variables)
 {
     if(ast == NULL)
         return;
-    if(ast->tag != AST_WHILE)
+    if(ast->tag != Ast::WHILE)
     {
-        printf("ERROR: node is not a AST_WHILE\n");
+        printf("ERROR: node is not a WHILE\n");
         exit(18); // ERROR CODE 18
     }
-    if(ast->data.AST_WHILE.condition == NULL)
+    if(ast->data.WHILE.condition == NULL)
     {
         printf("ERROR: while condition is NULL\n");
         exit(19); // ERROR CODE 19
     }
-    if(ast->data.AST_WHILE.body == NULL)
+    if(ast->data.WHILE.body == NULL)
     {
         printf("ERROR: while body is NULL\n");
         exit(20); // ERROR CODE 20
     }
-    AST *body = ast->data.AST_WHILE.body;
-    if(body->tag != AST_NODE)
+    AST *body = ast->data.WHILE.body;
+    if(body->tag != Ast::NODE)
     {
-        printf("ERROR: while body is not a AST_NODE\n");
+        printf("ERROR: while body is not a NODE\n");
         exit(21); // ERROR CODE 21
     }
     state->whilecount++;
-    for(size_t i = 0; i < body->data.AST_NODE.array_size; i++)
-        syntatic_analysis_body(body->data.AST_NODE.children[i], state, variables);
+    for(size_t i = 0; i < body->data.NODE.array_size; i++)
+        syntatic_analysis_body(body->data.NODE.children[i], state, variables);
     state->whilecount--;
 }
 void syntatic_analysis_if(AST *ast, STATE *state, VARIABLE_ARRAY *variables)
 {
     if(ast == NULL)
         return;
-    if(ast->tag != AST_IF)
+    if(ast->tag != Ast::IF)
     {
-        printf("ERROR: node is not a AST_IF\n");
+        printf("ERROR: node is not a IF\n");
         exit(18); // ERROR CODE 18
     }
-    if(ast->data.AST_IF.condition == NULL)
+    if(ast->data.IF.condition == NULL)
     {
         printf("ERROR: if condition is NULL\n");
         exit(19); // ERROR CODE 19
     }
-    if(ast->data.AST_IF.body == NULL)
+    if(ast->data.IF.body == NULL)
     {
         printf("ERROR: if body is NULL\n");
         exit(20); // ERROR CODE 20
     }
-    AST *body = ast->data.AST_IF.body;
-    if(body->tag != AST_NODE)
+    AST *body = ast->data.IF.body;
+    if(body->tag != Ast::NODE)
     {
-        printf("ERROR: if body is not a AST_NODE\n");
+        printf("ERROR: if body is not a NODE\n");
         exit(21); // ERROR CODE 21
     }
     state->ifcount++;
-    for(size_t i = 0; i < body->data.AST_NODE.array_size; i++)
+    for(size_t i = 0; i < body->data.NODE.array_size; i++)
     {
-        syntatic_analysis_body(body->data.AST_NODE.children[i], state, variables);
+        syntatic_analysis_body(body->data.NODE.children[i], state, variables);
         state->returned = false;
     }
     state->ifcount--;
     // add else body option
     /*
-    if(ast->data.AST_IF.else_body != NULL)
+    if(ast->data.IF.else_body != NULL)
     {
-        AST *else_body = ast->data.AST_IF.else_body;
-        if(else_body->tag != AST_NODE)
+        AST *else_body = ast->data.IF.else_body;
+        if(else_body->tag != NODE)
         {
-            printf("ERROR: else body is not a AST_NODE\n");
+            printf("ERROR: else body is not a NODE\n");
             exit(22); // ERROR CODE 22
         }
-        for(size_t i = 0; i < else_body->data.AST_NODE.array_size; i++)
-            syntatic_analysis_if_body(else_body->data.AST_NODE.children[i], state);
+        for(size_t i = 0; i < else_body->data.NODE.array_size; i++)
+            syntatic_analysis_if_body(else_body->data.NODE.children[i], state);
     }
     */
 }

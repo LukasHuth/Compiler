@@ -2,5 +2,8 @@
 #define H_PARSER
 #include "lexer.h"
 #include "AST.h"
-AST* parse(LEXER* lexer);
+namespace Parser
+{
+    AST* parse(Lexer::Lexer* lexer);
+}
 #endif

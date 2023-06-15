@@ -17,7 +17,8 @@
         "optional": "c",
         "system_error": "c",
         "ratio": "c",
-        "string": "cpp"
+        "string": "cpp",
+        "*.def": "cpp"
     },
     "configurationProvider": "ms-vscode.makefile-tools",
     "C_Cpp.default.configurationProvider": "ms-vscode.makefile-tools",
