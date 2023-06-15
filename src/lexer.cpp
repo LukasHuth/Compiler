@@ -4,7 +4,7 @@ namespace Lexer
 {
     Lexer *init(FILE* file)
     {
-        Lexer *lexer = new Lexer;
+        Lexer *lexer = new Lexer();
         lexer->index = 0;
         lexer->file = file;
         lexer->tokens = (Token**) calloc(0, sizeof(Token));

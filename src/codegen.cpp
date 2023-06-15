@@ -4,7 +4,7 @@
 namespace Codegen
 {
     #define InternalInfo struct INTERNAL_INFO
-    const bool _DEBUG = true;
+    const bool DEBUG = true;
 
     struct INTERNAL_INFO
     {
@@ -48,7 +48,9 @@ namespace Codegen
         LLVMInitializeNativeAsmParser();
 
         LLVMModuleRef module = LLVMModuleCreateWithName("new_module");
-        LLVMSetTarget(module, LLVMGetDefaultTargetTriple()); // saet target triple to x86_64-pc-linux-gnu
+        char* target = LLVMGetDefaultTargetTriple();
+        LLVMSetTarget(module, target); // saet target triple to x86_64-pc-linux-gnu
+        free(target);
         LLVMBuilderRef builder = LLVMCreateBuilder();
 
         LLVMTypeRef printf_args[] = {LLVMPointerType(LLVMInt8Type(), 0)};
@@ -61,7 +63,7 @@ namespace Codegen
         codegen_generate(codegen, module, builder);
 
         LLVMWriteBitcodeToFile(module, "main.bc");
-        if(_DEBUG) LLVMPrintModuleToFile(module, "main.ll", NULL);
+        if(DEBUG) LLVMPrintModuleToFile(module, "main.ll", NULL);
         Free(codegen);
         LLVMDisposeBuilder(builder);
         LLVMDisposeModule(module);
@@ -257,6 +259,7 @@ namespace Codegen
                 printf_args[0] = LLVMPointerType(LLVMInt8Type(), 0);
                 // printf_args[1] = type;
                 LLVMTypeRef printf_type = LLVMFunctionType(LLVMInt32Type(), printf_args, 1, true);
+                free(printf_args);
                 function = LLVMAddFunction(info->module, "printf", printf_type);
                 LLVMSetLinkage(function, LLVMExternalLinkage);
                 LLVMSetFunctionCallConv(function, LLVMCCallConv);
@@ -277,6 +280,7 @@ namespace Codegen
                 ret = LLVMBuildCall(info->builder, function, args, 2, "ret");
             }
             if(ret == NULL) printf("Unknown type for print\n");
+            free(type_name);
             return ret;
         }
         printf("Unknown std function: %s\n", function_name);
