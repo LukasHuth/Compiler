@@ -4,7 +4,8 @@ src_dir = src
 
 CC=gcc
 CXX = g++
-CFLAGS=-I. -Wall -Wextra -Werror -Wpedantic -std=c++2a -g -O3 -lm -Iinclude -L/usr/lib/llvm-10/lib -lLLVM-10
+# CFLAGS=-I. -Wall -Wextra -Werror -Wpedantic -std=c++2a -g -O3 -lm -Iinclude -L/usr/lib/llvm-10/lib -lLLVM-10
+CFLAGS=-I. -Wall -Wextra -Werror -Wpedantic -std=c++2a -g -lm -Iinclude -L/usr/lib/llvm-10/lib -lLLVM-10
 DEPS = $(wildcard $(src_dir)/*.h)
 SOURCE = $(wildcard $(src_dir)/*.cpp)
 OBJ_temp = $(SOURCE:.cpp=.o)

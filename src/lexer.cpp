@@ -19,7 +19,7 @@ namespace Lexer
             free(lexer->tokens[i]);
         }
         free(lexer->tokens);
-        free(lexer);
+        delete lexer;
     }
     char* parse_next(Lexer *lexer, Tag *tag)
     {

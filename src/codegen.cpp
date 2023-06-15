@@ -306,6 +306,7 @@ namespace Codegen
         sprintf(temp_name, "_%ld", info->temp_count++);
         temp_name = (char*) realloc(temp_name, sizeof(char) * (strlen(temp_name) + 1));
         LLVMValueRef result = LLVMBuildCall(info->builder, function, args, argc, temp_name);
+        free(temp_name);
         free(args);
         return result;
     }
@@ -356,13 +357,11 @@ namespace Codegen
     {
         if(ast == NULL) return NULL;
         if(!isValidInfo(info)) return NULL;
-        char* temp_name = (char*) calloc(10, sizeof(char));
+        char* temp_name = (char*) calloc(10, sizeof(char)); // some leak is happening with this
         LLVMValueRef value = NULL;
         switch (ast->tag)
         {
             case Ast::NUMBER:
-                // TODO: Fix problem that will be encountered with Floats
-                // value = LLVMConstInt(LLVMInt32Type(), atoi(ast->data.NUMBER.number), 0);
                 value = get_number_type(ast);
                 break;
             case Ast::VARIABLE:
@@ -382,7 +381,9 @@ namespace Codegen
                 }
                 if(value == NULL) return NULL;
                 value = LLVMBuildLoad(info->builder, value, temp_name);
-                break;
+                free(temp_name);
+                return value;
+                // break;
             case Ast::BINARY_OP:
                 value = generate_binary_expression(ast, info);
                 break;
@@ -491,6 +492,7 @@ namespace Codegen
         char* temp_name = (char*) calloc(1, sizeof(char*));
         sprintf(temp_name, "_%ld", info->temp_count++);
         LLVMValueRef value = generate_binary_operation_with_string(op, left, right, temp_name, info->builder);
+        free(temp_name);
         return value;
     }
 }

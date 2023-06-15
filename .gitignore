@@ -4,6 +4,11 @@ out/
 *.o
 *.ll
 *.bc
+*.sh
+*.tar
+*.tar.gz
+*.tar.bz2
+valgrind*/
 output
 main
 DrMemory-*
