@@ -68,7 +68,7 @@ namespace Codegen
     }
     void Free(Codegen *codegen)
     {
-        Ast::Free(codegen->ast);
+        delete codegen->ast;
         free(codegen);
     }
     void codegen_generate(Codegen *codegen, LLVMModuleRef module, LLVMBuilderRef builder)
@@ -130,7 +130,7 @@ namespace Codegen
         for(unsigned int i = 0; i < param_count; i++)
         {
             AST *child = ast->arguments[i];
-            AST *type = child->data.ARGUMENT.type;
+            AST *type = child->data.VAR_MANIP.ast;
             LLVMTypeRef type_ref = get_type(type);
             if(type_ref == NULL){printf("Type is NULL\n");return;}
             param_types[i] = type_ref;
@@ -310,8 +310,8 @@ namespace Codegen
         if(ast == NULL){printf("AST is NULL\n");return;}
         if(!isValidInfo(info)){printf("Info is invalid(variable assignment)\n");return;}
         if(ast->tag != Ast::ASSIGN){printf("AST is not an assignment\n");return;}
-        char* name = ast->data.ASSIGN.name;
-        AST *expr = ast->data.ASSIGN.value;
+        char* name = ast->data.VAR_MANIP.name;
+        AST *expr = ast->data.VAR_MANIP.ast;
         LLVMValueRef value = generate_expression(expr, info);
         if(value == NULL) return;
         // value = iterate vars
@@ -331,8 +331,8 @@ namespace Codegen
         if(ast == NULL){printf("AST is NULL\n");return;}
         if(!isValidInfo(info)){printf("Info is invalid(variable_declaration)\n");return;}
         if(ast->tag != Ast::DECLARATION){printf("AST is not a declaration\n");return;}
-        LLVMTypeRef type = get_type(ast->data.DECLARATION.type);
-        LLVMValueRef value = LLVMBuildAlloca(info->builder, type, ast->data.DECLARATION.name);
+        LLVMTypeRef type = get_type(ast->data.VAR_MANIP.ast);
+        LLVMValueRef value = LLVMBuildAlloca(info->builder, type, ast->data.VAR_MANIP.name);
         LLVMSetInitializer(value, LLVMConstInt(LLVMInt32Type(), 0, 0));
         info->variable_count++;
         info->variables = (LLVMValueRef*) realloc(info->variables, sizeof(LLVMValueRef) * info->variable_count);

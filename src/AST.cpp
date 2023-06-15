@@ -1,377 +1,274 @@
 #include "headers/AST.h"
 
-namespace Ast
+// AST* AST::Number(char* number) {AST* ast = new AST(Ast::NUMBER);ast->data.NUMBER.number = number; return ast;}
+const bool DEBUG = false;
+AST::AST(Ast::Tag tag, char* data)
 {
-    const bool DEBUG = false;
-    AST *new_node()
+    this->tag = tag;
+    if(tag == Ast::NUMBER)
     {
-        AST *ast = new AST();
-        ast->tag = NODE;
-        // ast->data.NODE = { .array_size = 0 };
-        // AST ast = { .tag = NODE, .= { .NODE = { .children = (AST**) calloc(sizeof(AST), 0), .array_size = 0 } } };
-        return ast;
+        this->data.NUMBER.number = data;
     }
-
-    void add_child(AST* ast, AST* child)
+}
+AST::AST(Ast::Tag tag, char* data, std::vector<AST*> args)
+{
+    this->tag = tag;
+    if(tag == Ast::CALL)
     {
-        // not finished
-        if (ast->tag == NODE)
+        this->data.CALL.name = data;
+        this->arguments.insert(this->arguments.end(), args.begin(), args.end());
+    }
+}
+AST::AST(Ast::Tag tag, char* data, bool con, int count)
+{
+    this->tag = tag;
+    if(tag == Ast::VARIABLE)
+    {
+        this->data.VARIABLE.name = data;
+        this->data.VARIABLE.is_arg = con;
+        this->data.VARIABLE.arg_index = count;
+    }
+}
+AST::AST(Ast::Tag tag, AST* expr)
+{
+    this->tag = tag;
+    this->data.EXPR.expr = expr;
+}
+AST::AST(Ast::Tag tag, char* name, AST* ast)
+{
+    this->tag = tag;
+    this->data.VAR_MANIP.name = name;
+    this->data.VAR_MANIP.ast = ast;
+}
+AST::AST(Ast::Tag tag,AST* left, AST* right, char* op)
+{
+    this->tag = tag;
+    this->data.TUPLE.left = left;
+    this->data.TUPLE.right = right;
+    this->data.TUPLE.op = op;
+}
+AST::AST(char* name, AST* type, AST* body, std::vector<AST*> args)
+{
+    this->tag = Ast::FUNCTION;
+    this->data.FUNCTION.type = type;
+    this->data.FUNCTION.body = body;
+    this->data.FUNCTION.name = name;
+    this->arguments.insert(this->arguments.end(), args.begin(), args.end());
+}
+AST::AST(char* name, bool con, AST* expr_array_size)
+{
+    this->tag = Ast::TYPE;
+    this->data.TYPE.array_size = expr_array_size;
+    this->data.TYPE.is_array = con;
+    this->data.TYPE.name = name;
+}
+AST::AST(AST* condition, AST* body, AST* else_body)
+{
+    this->tag = Ast::IF;
+    this->data.IF.body = body;
+    this->data.IF.condition = condition;
+    this->data.IF.else_body = else_body;
+}
+AST::AST(AST* condition, AST* body)
+{
+    this->tag = Ast::WHILE;
+    this->data.IF.body = body;
+    this->data.IF.condition = condition;
+}
+AST::AST(AST* init, AST* condition, AST* increment, AST* body)
+{
+    this->tag = Ast::FOR;
+    this->data.FOR.init = init;
+    this->data.FOR.condition = condition;
+    this->data.FOR.increment = increment;
+    this->data.FOR.body = body;
+}
+AST::~AST()
+{
+    switch (this->tag)
+    {
+    case Ast::RETURN:
+        if(DEBUG) printf("free return\n");
+        delete this->data.RETURN.expr;
+        break;
+    case Ast::NODE:
+        if(DEBUG) printf("free node\n");
+        break;
+    case Ast::FUNCTION:
+        if(DEBUG) printf("free function\n");
+        delete this->data.FUNCTION.type;
+        delete this->data.FUNCTION.body;
+        break;
+    case Ast::CALL:
+        if(DEBUG) printf("free call\n");
+        break;
+    case Ast::TYPE:
+        if(DEBUG) printf("free type\n");
+        delete this->data.TYPE.array_size;
+        break;
+    case Ast::ARGUMENT:
+    case Ast::DECLARATION:
+    case Ast::ASSIGN:
+        if(DEBUG) printf("free var_manip\n");
+        delete this->data.VAR_MANIP.ast;
+        break;
+    case Ast::IF:
+        if(DEBUG) printf("free if\n");
+        delete this->data.IF.condition;
+        delete this->data.IF.body;
+        delete this->data.IF.else_body;
+        break;
+    case Ast::WHILE:
+        if(DEBUG) printf("free while\n");
+        delete this->data.WHILE.condition;
+        delete this->data.WHILE.body;
+        break;
+    case Ast::FOR:
+        if(DEBUG) printf("free for\n");
+        delete this->data.FOR.init;
+        delete this->data.FOR.condition;
+        delete this->data.FOR.increment;
+        delete this->data.FOR.body;
+        break;
+    case Ast::BINARY_OP:
+        if(DEBUG) printf("free tuple\n");
+        delete this->data.TUPLE.left;
+        delete this->data.TUPLE.right;
+        break;
+    case Ast::EXPR:
+        if(DEBUG) printf("free expr\n");
+        delete this->data.EXPR.expr;
+        break;
+    default:
+        break;
+    }
+    while(this->arguments.size() > 0)
+    {
+        AST *ast = this->arguments.back();
+        this->arguments.pop_back();
+        delete ast;
+    }
+    while(this->children.size() > 0)
+    {
+        AST *ast = this->children.back();
+        this->children.pop_back();
+        delete ast;
+    }
+}
+void AST::print()
+{
+    switch (this->tag)
+    {
+    case Ast::NUMBER:
+        printf("%s", this->data.NUMBER.number);
+        break;
+    case Ast::BINARY_OP:
+        printf("(");
+        this->data.TUPLE.left->print();
+        printf("%s", this->data.TUPLE.op);
+        this->data.TUPLE.right->print();
+        printf(")");
+        break;
+    case Ast::EXPR:
+        printf("(");
+        this->data.EXPR.expr->print();
+        printf(")");
+        break;
+    case Ast::RETURN:
+        printf("return ");
+        this->data.RETURN.expr->print();
+        break;
+    case Ast::DECLARATION:
+    case Ast::ARGUMENT:
+    case Ast::ASSIGN:
+        this->data.VAR_MANIP.ast->print();
+        printf(" %s", this->data.VAR_MANIP.name);
+        break;
+    case Ast::FUNCTION:
+        this->data.FUNCTION.type->print();
+        printf(" %s(", this->data.FUNCTION.name);
+        for (size_t i = 0; i < this->arguments.size(); i++)
         {
-            // ast->data.NODE.array_size++;
-            ast->children.push_back(child);
-            // ast->data.NODE.children = (AST**) realloc(ast->data.NODE.children, sizeof(AST*) * (ast->data.NODE.array_size));
-            // ast->data.NODE.children[ast->data.NODE.array_size - 1] = child;
-            return;
+            this->arguments[i]->print();
+            if (i < this->arguments.size() - 1)
+            {
+                printf(", ");
+            }
         }
-    }
-    void add_argument(AST* ast, AST* argument)
-    {
-        ast->arguments.push_back(argument);
-        return;
-    }
-
-    AST *new_expr(AST *expr)
-    {
-        AST *ast = new AST();
-        ast->tag = EXPR;
-        ast->data.EXPR = { .expr = expr };
-        // AST ast = { .tag = EXPR, .= { .EXPR = { .expr = expr } } };
-        return ast;
-    }
-    AST *new_return(AST *expr)
-    {
-        AST *ast = new AST;
-        ast->tag = RETURN;
-        ast->data.RETURN = { .expr = expr };
-        // AST ast = { .tag = RETURN, .= { .RETURN = { .expr = expr } } };
-        return ast;
-    }
-    AST *new_argument(char* name, AST *type)
-    {
-        AST *ast = new AST;
-        ast->tag = ARGUMENT;
-        ast->data.ARGUMENT = { .name = name, .type = type };
-        // AST ast = { .tag = ARGUMENT, .= { .ARGUMENT = { .name = name, .type = type } } };
-        return ast;
-    }
-    AST *new_function(char* name, AST *type, AST *body, std::vector<AST*> arguments)
-    {
-        AST *ast = new AST;
-        ast->tag = FUNCTION;
-        ast->arguments.insert(ast->arguments.end(), arguments.begin(), arguments.end());
-        ast->data.FUNCTION = { .name = name, .type = type, .body = body };
-        // AST ast = { .tag = FUNCTION, .= { .FUNCTION = { .name = name, .type = type, .body = body, .arguments = arguments, .array_size = array_size } } };
-        return ast;
-    }
-    AST *new_type(char* name, bool is_array, AST* array_size)
-    {
-        AST *ast = new AST;
-        ast->tag = TYPE;
-        ast->data.TYPE = { .name = name, .is_array = is_array, .array_size = array_size };
-        // AST ast = { .tag = TYPE, .= { .TYPE = { .name = name, .is_array = is_array, .array_size = array_size } } };
-        return ast;
-    }
-    AST *new_declaration(char* name, AST *type)
-    {
-        AST *ast = new AST;
-        ast->tag = DECLARATION;
-        ast->data.DECLARATION = { .name = name, .type = type };
-        // AST ast = { .tag = DECLARATION, .= { .DECLARATION = { .name = name, .type = type } } };
-        return ast;
-    }
-    AST *new_assign(char* name, AST *value)
-    {
-        AST *ast = new AST;
-        ast->tag = ASSIGN;
-        ast->data.ASSIGN = { .name = name, .value = value };
-        // AST ast = { .tag = ASSIGN, .= { .ASSIGN = { .name = name, .value = value } } };
-        return ast;
-    }
-    AST *new_if(AST *condition, AST *body)
-    {
-        AST *ast = new AST;
-        ast->tag = IF;
-        ast->data.IF = { .condition = condition, .body = body };
-        // AST ast = { .tag = IF, .= { .IF = { .condition = condition, .body = body } } };
-        return ast;
-    }
-    AST *new_while(AST *condition, AST *body)
-    {
-        AST *ast = new AST;
-        ast->tag = WHILE;
-        ast->data.WHILE = { .condition = condition, .body = body };
-        // AST ast = { .tag = WHILE, .= { .WHILE = { .condition = condition, .body = body } } };
-        return ast;
-    }
-    AST *new_for(AST *init, AST *condition, AST *increment, AST *body)
-    {
-        AST *ast = new AST;
-        ast->tag = FOR;
-        ast->data.FOR = { .init = init, .condition = condition, .increment = increment, .body = body };
-        // AST ast = { .tag = FOR, .= { .FOR = { .init = init, .condition = condition, .increment = increment, .body = body } } };
-        return ast;
-    }
-    AST *new_break()
-    {
-        AST *ast = new AST;
-        ast->tag = BREAK;
-        // AST ast = { .tag = BREAK, .= { NULL } };
-        return ast;
-    }
-    AST *new_noop()
-    {
-        AST *ast = new AST;
-        ast->tag = NOOP;
-        // AST ast = { .tag = NOOP, .= { NULL } };
-        return ast;
-    }
-    AST *new_continue()
-    {
-        AST *ast = new AST;
-        ast->tag = CONTINUE;
-        // AST ast = { .tag = CONTINUE, .= { NULL } };
-        return ast;
-    }
-    AST *new_call(char* name, std::vector<AST*> arguments)
-    {
-        AST *ast = new AST;
-        ast->tag = CALL;
-        ast->arguments.insert(ast->arguments.end(), arguments.begin(), arguments.end());
-        ast->data.CALL = { .name = name };
-        // AST ast = { .tag = CALL, .= { .CALL = { .name = name, .arguments = arguments, .array_size = array_size } } };
-        return ast;
-    }
-    AST *new_variable(char* name, bool is_arg, int arg_index)
-    {
-        AST *ast = new AST;
-        ast->tag = VARIABLE;
-        ast->data.VARIABLE = { .name = name, .is_arg = is_arg, .arg_index = arg_index };
-        // AST ast = { .tag = VARIABLE, .= { .VARIABLE = { .name = name, .is_arg = is_arg, .arg_index = arg_index } } };
-        return ast;
-    }
-
-    AST *new_single(Tag tag, AST *expr)
-    {
-        AST *ast = new AST;
-        ast->tag = tag;
-        ast->data.EXPR = { .expr = expr };
-        return ast;
-    }
-    AST *new_number(char* number)
-    {
-        AST *ast = new AST;
-        ast->tag = NUMBER;
-        ast->data.NUMBER = { .number = number };
-        // AST ast = { .tag = NUMBER, .= { .NUMBER = { .number = number } } };
-        return ast;
-    }
-    AST *new_tuple(Tag tag, AST *left, AST *right, char* op)
-    {
-        AST *ast = new AST();
-        ast->tag = tag;
-        ast->data.TUPLE = { .left = left, .right = right, .op = op };
-        // AST ast = { .tag = tag, .= { .TUPLE = { .left = left, .right = right, .op = op } } };
-        return ast;
-    }
-    void print(AST *ast)
-    {
-        switch (ast->tag)
+        printf(") {\n");
+        this->data.FUNCTION.body->print();
+        printf("}\n");
+        break;
+    case Ast::NODE:
+        for (size_t i = 0; i < this->children.size(); i++)
         {
-        case NUMBER:
-            printf("%s", ast->data.NUMBER.number);
-            break;
-        case BINARY_OP:
-            printf("(");
-            print(ast->data.TUPLE.left);
-            printf("%s", ast->data.TUPLE.op);
-            print(ast->data.TUPLE.right);
-            printf(")");
-            break;
-        case EXPR:
-            printf("(");
-            print(ast->data.EXPR.expr);
-            printf(")");
-            break;
-        case RETURN:
-            printf("return ");
-            print(ast->data.RETURN.expr);
-            break;
-        case ARGUMENT:
-            print(ast->data.ARGUMENT.type);
-            printf(" %s", ast->data.ARGUMENT.name);
-            break;
-        case FUNCTION:
-            print(ast->data.FUNCTION.type);
-            printf(" %s(", ast->data.FUNCTION.name);
-            for (size_t i = 0; i < ast->arguments.size(); i++)
-            {
-                print(ast->arguments[i]);
-                if (i < ast->arguments.size() - 1)
-                {
-                    printf(", ");
-                }
-            }
-            printf(") {\n");
-            print(ast->data.FUNCTION.body);
-            printf("}\n");
-            break;
-        case NODE:
-            for (size_t i = 0; i < ast->children.size(); i++)
-            {
-                print(ast->children[i]);
-                printf("\n");
-            }
-            break;
-        case TYPE:
-            printf("%s", ast->data.TYPE.name);
-            if (ast->data.TYPE.is_array)
-            {
-                printf("[");
-                print(ast->data.TYPE.array_size);
-                printf("]");
-            }
-            break;
-        case DECLARATION:
-            print(ast->data.DECLARATION.type);
-            printf(" %s;", ast->data.DECLARATION.name);
-            break;
-        case ASSIGN:
-            printf("%s = ", ast->data.ASSIGN.name);
-            print(ast->data.ASSIGN.value);
-            break;
-        case IF:
-            printf("if (");
-            print(ast->data.IF.condition);
-            printf(") {\n");
-            print(ast->data.IF.body);
-            printf("}\n");
-            break;
-        case WHILE:
-            printf("while (");
-            print(ast->data.WHILE.condition);
-            printf(") {\n");
-            print(ast->data.WHILE.body);
-            printf("}\n");
-            break;
-        case FOR:
-            printf("for (");
-            print(ast->data.FOR.init);
-            printf("; ");
-            print(ast->data.FOR.condition);
-            printf("; ");
-            print(ast->data.FOR.increment);
-            printf(") {\n");
-            print(ast->data.FOR.body);
-            printf("}\n");
-            break;
-        case BREAK:
-            printf("break");
-            break;
-        case CONTINUE:
-            printf("continue");
-            break;
-        case CALL:
-            printf("%s(", ast->data.CALL.name);
-            for (size_t i = 0; i < ast->arguments.size(); i++)
-            {
-                print(ast->arguments[i]);
-                if (i != ast->arguments.size() - 1)
-                {
-                    printf(", ");
-                }
-            }
-            printf(")");
-            break;
-        case VARIABLE:
-            printf("%s", ast->data.VARIABLE.name);
-            break;
-        default:
-            printf("AST(print): Error: Unknown tag (%s)\n", get_tag_name(ast->tag).c_str());
-            break;
+            this->children[i]->print();
+            printf("\n");
         }
-    }
-    void Free(AST *ast)
-    {
-        // still need to free something that i can't find (but its only 68 bytes by 34 leaks, so it should be fixable)
-        switch (ast->tag)
+        break;
+    case Ast::TYPE:
+        printf("%s", this->data.TYPE.name);
+        if (this->data.TYPE.is_array)
         {
-        case RETURN:
-            Free(ast->data.RETURN.expr);
-            if(DEBUG) printf("free return\n");
-            break;
-        case NODE:
-            if(DEBUG) printf("count: %ld\n", ast->children.size());
-            for (size_t i = 0; i < ast->children.size(); i++)
-            {
-                Free(ast->children[i]);
-            }
-            // free(ast->data.NODE.children);
-            if(DEBUG) printf("free node\n");
-            break;
-        case FUNCTION:
-            Free(ast->data.FUNCTION.type);
-            Free(ast->data.FUNCTION.body);
-            for (size_t i = 0; i < ast->arguments.size(); i++)
-            {
-                Free(ast->arguments[i]);
-            }
-            // free(ast->data.FUNCTION.arguments);
-            if(DEBUG) printf("free function\n");
-            break;
-        case CALL:
-            for (size_t i = 0; i < ast->arguments.size(); i++)
-            {
-                Free(ast->arguments[i]);
-            }
-            // free(ast->data.CALL.arguments);
-            if(DEBUG) printf("free call\n");
-            break;
-        case ARGUMENT:
-            Free(ast->data.ARGUMENT.type);
-            if(DEBUG) printf("free argument\n");
-            break;
-        case TYPE:
-            if(DEBUG) printf("free type\n");
-            break;
-        case DECLARATION:
-            Free(ast->data.DECLARATION.type);
-            if(DEBUG) printf("free declaration\n");
-            break;
-        case ASSIGN:
-            Free(ast->data.ASSIGN.value);
-            if(DEBUG) printf("free assign\n");
-            break;
-        case IF:
-            Free(ast->data.IF.condition);
-            Free(ast->data.IF.body);
-            if(DEBUG) printf("free if\n");
-            break;
-        case WHILE:
-            Free(ast->data.WHILE.condition);
-            Free(ast->data.WHILE.body);
-            if(DEBUG) printf("free while\n");
-            break;
-        case FOR:
-            Free(ast->data.FOR.init);
-            Free(ast->data.FOR.condition);
-            Free(ast->data.FOR.increment);
-            Free(ast->data.FOR.body);
-            if(DEBUG) printf("free for\n");
-            break;
-        case BINARY_OP:
-            Free(ast->data.TUPLE.left);
-            Free(ast->data.TUPLE.right);
-            // free(ast->data.TUPLE.op);
-            if(DEBUG) printf("free tuple\n");
-            break;
-        case EXPR:
-            if(DEBUG) printf("free expr(%s)\n", get_tag_name(ast->data.EXPR.expr->tag).c_str());
-            Free(ast->data.EXPR.expr);
-            if(DEBUG) printf("free expr\n");
-            break;
-        default:
-            break;
+            printf("[");
+            this->data.TYPE.array_size->print();
+            printf("]");
         }
-        free(ast);
+        break;
+    case Ast::IF:
+        printf("if (");
+        this->data.IF.condition->print();
+        printf(") {\n");
+        this->data.IF.body->print();
+        printf("}\n");
+        if(this->data.IF.else_body != NULL)
+        {
+            printf("else {\n");
+            this->data.IF.else_body->print();
+            printf("}\n");
+        }
+        break;
+    case Ast::WHILE:
+        printf("while (");
+        this->data.WHILE.condition->print();
+        printf(") {\n");
+        this->data.WHILE.body->print();
+        printf("}\n");
+        break;
+    case Ast::FOR:
+        printf("for (");
+        this->data.FOR.init->print();
+        printf("; ");
+        this->data.FOR.condition->print();
+        printf("; ");
+        this->data.FOR.increment->print();
+        printf(") {\n");
+        this->data.FOR.body->print();
+        printf("}\n");
+        break;
+    case Ast::BREAK:
+        printf("break");
+        break;
+    case Ast::CONTINUE:
+        printf("continue");
+        break;
+    case Ast::CALL:
+        printf("%s(", this->data.CALL.name);
+        for (size_t i = 0; i < this->arguments.size(); i++)
+        {
+            this->arguments[i]->print();
+            if (i != this->arguments.size() - 1)
+            {
+                printf(", ");
+            }
+        }
+        printf(")");
+        break;
+    case Ast::VARIABLE:
+        printf("%s", this->data.VARIABLE.name);
+        break;
+    default:
+        printf("AST(print): Error: Unknown tag (%s)\n", get_tag_name(this->tag).c_str());
+        break;
     }
 }

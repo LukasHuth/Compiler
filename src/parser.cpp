@@ -21,11 +21,12 @@ namespace Parser
 
     AST* parse(Lexer::Lexer *lexer)
     {
-        AST* ast = Ast::new_node();
+        AST* ast = new AST(Ast::NODE);
         while (lexer->index < lexer->buffer_size)
         {
             AST* expr = parse_func(lexer);
-            Ast::add_child(ast, expr);
+            ast->add_child(expr);
+            // Ast::add_child(ast, expr);
         }
         return ast;
     }
@@ -70,7 +71,8 @@ namespace Parser
         eat(lexer, Lexer::COLON);
         AST *type = parse_type(lexer, NULL);
         eat(lexer, Lexer::ARROW);
-        AST *function = Ast::new_function(name, type, NULL, arguments);
+        // AST *function = Ast::new_function(name, type, NULL, arguments);
+        AST *function = new AST(name, type, NULL, arguments);
         AST *body = parse_body(lexer, function);
         function->data.FUNCTION.body = body;
         return function;
@@ -79,19 +81,20 @@ namespace Parser
     AST *parse_body(Lexer::Lexer *lexer, AST* function)
     {
         eat(lexer, Lexer::OPEN_BRACE);
-        AST* ast = Ast::new_node();
+        AST* ast = new AST(Ast::NODE);
         while (peek(lexer) != Lexer::CLOSE_BRACE)
         {
             AST* expr = parse_expr(lexer, function);
-            Ast::add_child(ast, expr);
+            ast->add_child(expr);
             if(peek(lexer) == Lexer::SEMICOLON)
             {
                 eat(lexer, Lexer::SEMICOLON);
                 continue;
             }
             if(expr->tag != Ast::DECLARATION) continue;
-            AST *assignment = parse_assignment(lexer, expr->data.DECLARATION.name, function);
-            Ast::add_child(ast, assignment);
+            AST *assignment = parse_assignment(lexer, expr->data.VAR_MANIP.name, function);
+            // Ast::add_child(ast, assignment);
+            ast->add_child(assignment);
             eat(lexer, Lexer::SEMICOLON);
         }
         eat(lexer, Lexer::CLOSE_BRACE);
@@ -145,12 +148,12 @@ namespace Parser
             if(strcmp(name, "break") == 0)
             {
                 // eat(lexer, Lexer::SEMICOLON);
-                return Ast::new_break();
+                return new AST(Ast::BREAK);
             }
             if(strcmp(name, "continue") == 0)
             {
                 // eat(lexer, Lexer::SEMICOLON);
-                return Ast::new_continue();
+                return new AST(Ast::CONTINUE);
             }
             if(strcmp(name, "import") == 0)
             {
@@ -210,7 +213,7 @@ namespace Parser
             eat(lexer, peek(lexer));
         }
         eat(lexer, Lexer::SEMICOLON);
-        return Ast::new_noop();
+        return new AST(Ast::NOOP);
     }
 
     AST *parse_for(Lexer::Lexer *lexer, AST* function)
@@ -237,7 +240,7 @@ namespace Parser
         AST *condition = parse_term(lexer, function);
         eat(lexer, Lexer::CLOSE_PAREN);
         AST *body = parse_body(lexer, function);
-        return Ast::new_while(condition, body);
+        return new AST(condition, body);
     }
 
     AST *parse_if(Lexer::Lexer *lexer, AST* function)
@@ -246,7 +249,7 @@ namespace Parser
         AST *condition = parse_term(lexer, function);
         eat(lexer, Lexer::CLOSE_PAREN);
         AST *body = parse_body(lexer, function);
-        return Ast::new_if(condition, body);
+        return new AST(condition, body, NULL);
     }
 
     AST *parse_return(Lexer::Lexer *lexer, AST* function)
@@ -254,14 +257,14 @@ namespace Parser
         AST* value = parse_term(lexer, function);
         // AST_print(value);
         // eat(lexer, Lexer::SEMICOLON);
-        return Ast::new_return(value);
+        return new AST(Ast::RETURN, value);
     }
 
     AST *parse_declaration(Lexer::Lexer *lexer, char* name)
     {
         eat(lexer, Lexer::COLON);
         AST* type = parse_type(lexer, NULL);
-        return Ast::new_declaration(name, type);
+        return new AST(Ast::DECLARATION, name, type);
     }
 
     AST *parse_assignment(Lexer::Lexer *lexer, char *name, AST* function)
@@ -269,7 +272,7 @@ namespace Parser
         eat(lexer, Lexer::EQUALS);
         AST *value = parse_term(lexer, function);
         // eat(lexer, Lexer::SEMICOLON);
-        return Ast::new_assign(name, value);
+        return new AST(Ast::ASSIGN, name, value);
     }
 
     AST *parse_argument(Lexer::Lexer *lexer)
@@ -277,7 +280,7 @@ namespace Parser
         char *name = eat(lexer, Lexer::IDENTIFIER)->data;
         eat(lexer, Lexer::COLON);
         AST *type = parse_type(lexer, NULL);
-        return Ast::new_argument(name, type);
+        return new AST(Ast::ARGUMENT, name, type);
     }
 
     AST *parse_type(Lexer::Lexer *lexer, AST* function)
@@ -288,11 +291,11 @@ namespace Parser
             eat(lexer, Lexer::OPEN_BRACKET);
             AST *array_size = parse_term(lexer, function);
             eat(lexer, Lexer::CLOSE_BRACKET);
-            return Ast::new_type(name, true, array_size);
+            return new AST(name, true, array_size);
         }
         else
         {
-            return Ast::new_type(name, false, NULL);
+            return new AST(name, false, NULL);
         }
     }
 
@@ -313,19 +316,22 @@ namespace Parser
                 if(left->data.TUPLE.op == token->data)
                 {
                     AST* right = parse_factor(lexer, function);
-                    left = Ast::new_tuple(Ast::BINARY_OP, left, right, token->data);
+                    // left = Ast::new_tuple(Ast::BINARY_OP, left, right, token->data);
+                    left = new AST(Ast::BINARY_OP, left, right, token->data);
                     continue;
                 }
                 if(Ast::tag_get_priority(left->data.TUPLE.op) < Ast::tag_get_priority(token->data))
                 {
                     AST* right = parse_factor(lexer, function);
-                    AST* new_left = Ast::new_tuple(Ast::BINARY_OP, left->data.TUPLE.left, right, token->data);
+                    // AST* new_left = Ast::new_tuple(Ast::BINARY_OP, left->data.TUPLE.left, right, token->data);
+                    AST* new_left = new AST(Ast::BINARY_OP, left->data.TUPLE.left, right, token->data);
                     left->data.TUPLE.left = new_left;
                     continue;
                 }
             }
             AST *right = parse_factor(lexer, function);
-            left = Ast::new_tuple(Ast::BINARY_OP, left, right, token->data);
+            // left = Ast::new_tuple(Ast::BINARY_OP, left, right, token->data);
+            left = new AST(Ast::BINARY_OP, left, right, token->data);
         }
         return left;
     }
@@ -335,7 +341,7 @@ namespace Parser
         if(function->tag != Ast::FUNCTION) return false;
         for(size_t i = 0; i < function->arguments.size(); i++)
         {
-            if(strcmp(function->arguments[i]->data.ARGUMENT.name, name) == 0)
+            if(strcmp(function->arguments[i]->data.VAR_MANIP.name, name) == 0)
             {
                 return true;
             }
@@ -348,7 +354,7 @@ namespace Parser
         if(function->tag != Ast::FUNCTION) return false;
         for(size_t i = 0; i < function->arguments.size(); i++)
         {
-            if(strcmp(function->arguments[i]->data.ARGUMENT.name, name) == 0)
+            if(strcmp(function->arguments[i]->data.VAR_MANIP.name, name) == 0)
             {
                 return i;
             }
@@ -360,7 +366,7 @@ namespace Parser
         if (peek(lexer) == Lexer::NUMBER)
         {
             char* number = eat(lexer, Lexer::NUMBER)->data;
-            return Ast::new_number(number);
+            return new AST(Ast::NUMBER, number);
         }
         if (peek(lexer) == Lexer::OPEN_PAREN)
         {
@@ -379,7 +385,7 @@ namespace Parser
             bool b_is_arg = is_arg(function, name);
             int position = 0;
             if(b_is_arg) position = get_arg_position(function, name);
-            return Ast::new_variable(name, b_is_arg, position);
+            return new AST(Ast::VARIABLE, name, b_is_arg, position);
         }
         printf("Parser(parse_factor): Error: Unexpected token %s\n", Lexer::Tag_to_string(peek(lexer)).c_str());
         exit(1);
@@ -404,6 +410,6 @@ namespace Parser
         }
         eat(lexer, Lexer::CLOSE_PAREN);
         // eat(lexer, Lexer::SEMICOLON);
-        return Ast::new_call(name, arguments);
+        return new AST(Ast::CALL, name, arguments);
     }
 }

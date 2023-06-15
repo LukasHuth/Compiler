@@ -137,46 +137,46 @@ void syntatic_analysis_body(AST *ast, STATE *state, VARIABLE_ARRAY *variables)
         return;
     if(ast->tag == Ast::DECLARATION)
     {
-        if(ast->data.DECLARATION.type == NULL)
+        if(ast->data.VAR_MANIP.ast == NULL)
         {
             printf("ERROR: declaration type is NULL\n");
             exit(12); // ERROR CODE 12
         }
-        if(ast->data.DECLARATION.name == NULL)
+        if(ast->data.VAR_MANIP.name == NULL)
         {
             printf("ERROR: declaration name is NULL\n");
             exit(12); // ERROR CODE 12
         }
-        if(variable_array_has_variable(variables, ast->data.DECLARATION.name))
+        if(variable_array_has_variable(variables, ast->data.VAR_MANIP.name))
         {
-            printf("ERROR: variable %s already declared\n", ast->data.DECLARATION.name);
+            printf("ERROR: variable %s already declared\n", ast->data.VAR_MANIP.name);
             exit(17); // ERROR CODE 17
         }
-        VARIABLE *variable = create_variable(ast->data.DECLARATION.type, ast->data.DECLARATION.name);
+        VARIABLE *variable = create_variable(ast->data.VAR_MANIP.ast, ast->data.VAR_MANIP.name);
         // add_variable(variables, create_variable(ast->data.DECLARATION.type, ast->data.DECLARATION.name));
         variable_array_add_variable(variables, variable);
         return;
     }
     if(ast->tag == Ast::ASSIGN)
     {
-        if(ast->data.ASSIGN.name == NULL)
+        if(ast->data.VAR_MANIP.name == NULL)
         {
             printf("ERROR: assign name is NULL\n");
             exit(12); // ERROR CODE 12
         }
-        if(!variable_array_has_variable(variables, ast->data.ASSIGN.name))
+        if(!variable_array_has_variable(variables, ast->data.VAR_MANIP.name))
         {
-            printf("ERROR: variable %s not declared\n", ast->data.ASSIGN.name);
+            printf("ERROR: variable %s not declared\n", ast->data.VAR_MANIP.name);
             exit(17); // ERROR CODE 17
         }
-        if(ast->data.ASSIGN.value == NULL)
+        if(ast->data.VAR_MANIP.ast == NULL)
         {
             printf("ERROR: assign value is NULL\n");
             exit(12); // ERROR CODE 12
         }
-        if(!has_same_type(ast->data.ASSIGN.value, variable_array_get_variable(variables, ast->data.ASSIGN.name)->type))
+        if(!has_same_type(ast->data.VAR_MANIP.ast, variable_array_get_variable(variables, ast->data.VAR_MANIP.name)->type))
         {
-            printf("ERROR: variable %s has different type\n", ast->data.ASSIGN.name);
+            printf("ERROR: variable %s has different type\n", ast->data.VAR_MANIP.name);
             exit(17); // ERROR CODE 17
         }
         return;

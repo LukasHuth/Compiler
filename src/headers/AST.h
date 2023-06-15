@@ -8,55 +8,45 @@
 
 #include "AST_TAG.h"
 
-typedef struct AST AST;
-struct AST {
-  Ast::Tag tag;
-  std::vector<AST*> children;
-  std::vector<AST*> arguments;
-  union data {
-    struct NUMBER { char* number; } NUMBER;
-    struct TUPLE { AST *left; AST *right; char* op; } TUPLE;
-    struct EXPR { AST *expr; } EXPR;
-    struct RETURN { AST *expr; } RETURN;
-    struct ARGUMENT { char* name; AST *type; } ARGUMENT;
-    struct FUNCTION { char* name; AST *type; AST *body; } FUNCTION;
-    struct TYPE { char* name; bool is_array; AST* array_size; } TYPE;
-    struct DECLARATION { char* name; AST *type; } DECLARATION;
-    struct ASSIGN { char* name; AST *value; } ASSIGN;
-    struct IF { AST *condition; AST *body; } IF;
-    struct WHILE { AST *condition; AST *body; } WHILE;
-    struct FOR { AST *init; AST *condition; AST *increment; AST *body; } FOR;
-    struct CALL { char* name; } CALL;
-    struct VARIABLE { char* name; bool is_arg; int arg_index; } VARIABLE;
-  } data;
+typedef class AST AST;
+class AST {
+  public:
+    Ast::Tag tag;
+    std::vector<AST*> children;
+    std::vector<AST*> arguments;
+    union data {
+      struct NUMBER { char* number; } NUMBER;
+      struct TUPLE { AST *left; AST *right; char* op; } TUPLE;
+      struct EXPR { AST *expr; } EXPR;
+      struct RETURN { AST *expr; } RETURN;
+      struct FUNCTION { char* name; AST *type; AST *body; } FUNCTION;
+      struct TYPE { char* name; bool is_array; AST* array_size; } TYPE;
+      struct VAR_MANIP { char* name; AST *ast; } VAR_MANIP; //same
+      // struct ARGUMENT { char* name; AST *type; } ARGUMENT; //same
+      // struct DECLARATION { char* name; AST *type; } DECLARATION; //same
+      // struct ASSIGN { char* name; AST *value; } ASSIGN; //same
+      struct IF { AST *condition; AST *body; AST *else_body; } IF; // same
+      struct WHILE { AST *condition; AST *body; } WHILE; // same
+      struct FOR { AST *init; AST *condition; AST *increment; AST *body; } FOR;
+      struct CALL { char* name; } CALL;
+      struct VARIABLE { char* name; bool is_arg; int arg_index; } VARIABLE;
+    } data;
+    void add_argument(AST* argument) {this->arguments.push_back(argument);}
+    void add_child(AST* child) {this->children.push_back(child);}
+    void print();
+    AST(){}
+    AST(Ast::Tag tag){this->tag = tag;}
+    AST(Ast::Tag tag, char* data);
+    AST(Ast::Tag tag, char* data, std::vector<AST*> args);
+    AST(Ast::Tag tag, char* data, bool con, int count);
+    AST(Ast::Tag tag, AST* expr);
+    AST(Ast::Tag tag, char* name, AST* ast);
+    AST(Ast::Tag tag, AST* left, AST* right, char* op);
+    AST(char* name, AST* type, AST* body, std::vector<AST*> args);
+    AST(char* name, bool con, AST* expr_array_size);
+    AST(AST* condition, AST* body);
+    AST(AST* condition, AST* body, AST* else_body);
+    AST(AST* init, AST* condition, AST* increment, AST*body);
+    ~AST();
 };
-
-namespace Ast
-{
-  AST *new_single(Tag tag, AST *expr);
-  AST *new_number(char* number);
-  AST *new_tuple(Tag tag, AST *left, AST *right, char* op);
-  // from here on, the functions are not written at the moment
-  AST *new_node();
-  AST *new_expr(AST *expr);
-  AST *new_return(AST *expr);
-  AST *new_argument(char* name, AST *type);
-  AST *new_function(char* name, AST *type, AST *body, std::vector<AST*> arguments);
-  AST *new_type(char* name, bool is_array, AST* array_size);
-  AST *new_declaration(char* name, AST *type);
-  AST *new_assign(char* name, AST *value);
-  AST *new_if(AST *condition, AST *body);
-  AST *new_while(AST *condition, AST *body);
-  AST *new_for(AST *init, AST *condition, AST *increment, AST *body);
-  AST *new_break();
-  AST *new_noop();
-  AST *new_continue();
-  AST *new_call(char* name, std::vector<AST*> arguments);
-  AST *new_variable(char* name, bool is_arg, int arg_index);
-  void add_argument(AST* ast, AST* argument);
-  void add_child(AST* ast, AST* child);
-  // until here
-  void Free(AST *ast);
-  void print(AST *ast);
-}
 #endif

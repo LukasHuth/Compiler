@@ -8,6 +8,7 @@ typedef struct {
     char* name;
 } VARIABLE;
 
+// TODO: convert this to class with vector and add a function to check if something is contained
 typedef struct {
     VARIABLE* *variables;
     size_t size;
