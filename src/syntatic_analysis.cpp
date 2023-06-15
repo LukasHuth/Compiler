@@ -29,9 +29,9 @@ void syntatic_analysis(AST *node)
     }
     SYMBOL_TABLE *table = create_symbol_table();
     bool has_main = false;
-    for(size_t i = 0; i < node->data.NODE.array_size; i++)
+    for(size_t i = 0; i < node->children.size(); i++)
     {
-        bool is_main = syntatic_analysis_children(node->data.NODE.children[i], table);
+        bool is_main = syntatic_analysis_children(node->children[i], table);
         if(is_main)
             has_main = true;
     }
@@ -105,11 +105,6 @@ bool syntatic_analysis_function(AST *ast, STATE *state, VARIABLE_ARRAY *variable
         printf("ERROR: function body is NULL\n");
         exit(14); // ERROR CODE 14
     }
-    if(ast->data.FUNCTION.arguments == NULL)
-    {
-        printf("ERROR: function arguments is NULL\n");
-        exit(15); // ERROR CODE 15
-    }
     char* function_name = ast->data.FUNCTION.name;
     bool is_main = strcmp(function_name, "main") == 0;
     if(is_main)
@@ -126,8 +121,8 @@ bool syntatic_analysis_function(AST *ast, STATE *state, VARIABLE_ARRAY *variable
         printf("ERROR: function body is not a NODE\n");
         exit(16); // ERROR CODE 16
     }
-    for(size_t i = 0; i < body->data.NODE.array_size; i++)
-        syntatic_analysis_body(body->data.NODE.children[i], state, variables);
+    for(size_t i = 0; i < body->children.size(); i++)
+        syntatic_analysis_body(body->children[i], state, variables);
     return is_main;
 }
 void syntatic_analysis_body(AST *ast, STATE *state, VARIABLE_ARRAY *variables)
@@ -258,8 +253,8 @@ void syntatic_analysis_while(AST *ast, STATE *state, VARIABLE_ARRAY *variables)
         exit(21); // ERROR CODE 21
     }
     state->whilecount++;
-    for(size_t i = 0; i < body->data.NODE.array_size; i++)
-        syntatic_analysis_body(body->data.NODE.children[i], state, variables);
+    for(size_t i = 0; i < body->children.size(); i++)
+        syntatic_analysis_body(body->children[i], state, variables);
     state->whilecount--;
 }
 void syntatic_analysis_if(AST *ast, STATE *state, VARIABLE_ARRAY *variables)
@@ -288,9 +283,9 @@ void syntatic_analysis_if(AST *ast, STATE *state, VARIABLE_ARRAY *variables)
         exit(21); // ERROR CODE 21
     }
     state->ifcount++;
-    for(size_t i = 0; i < body->data.NODE.array_size; i++)
+    for(size_t i = 0; i < body->children.size(); i++)
     {
-        syntatic_analysis_body(body->data.NODE.children[i], state, variables);
+        syntatic_analysis_body(body->children[i], state, variables);
         state->returned = false;
     }
     state->ifcount--;

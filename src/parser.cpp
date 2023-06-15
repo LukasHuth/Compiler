@@ -52,14 +52,15 @@ namespace Parser
         eat(lexer, Lexer::KEYWORD);
         char *name = eat(lexer, Lexer::IDENTIFIER)->data;
         eat(lexer, Lexer::OPEN_PAREN);
-        AST** arguments = (AST**) calloc(sizeof(AST*), 0);
-        size_t array_size = 0;
+        // AST** arguments = (AST**) calloc(sizeof(AST*), 0);
+        std::vector<AST*> arguments;
         while (peek(lexer) != Lexer::CLOSE_PAREN)
         {
             AST* argument = parse_argument(lexer);
-            arguments = (AST**) realloc(arguments, sizeof(AST*) * (array_size + 1));
-            arguments[array_size] = argument;
-            array_size++;
+            arguments.push_back(argument);
+            // arguments = (AST**) realloc(arguments, sizeof(AST*) * (array_size + 1));
+            // arguments[array_size] = argument;
+            // array_size++;
             if (peek(lexer) == Lexer::COMMA)
             {
                 eat(lexer, Lexer::COMMA);
@@ -69,7 +70,7 @@ namespace Parser
         eat(lexer, Lexer::COLON);
         AST *type = parse_type(lexer, NULL);
         eat(lexer, Lexer::ARROW);
-        AST *function = Ast::new_function(name, type, NULL, arguments, array_size);
+        AST *function = Ast::new_function(name, type, NULL, arguments);
         AST *body = parse_body(lexer, function);
         function->data.FUNCTION.body = body;
         return function;
@@ -332,9 +333,9 @@ namespace Parser
     {
         if(function == NULL) return false;
         if(function->tag != Ast::FUNCTION) return false;
-        for(size_t i = 0; i < function->data.FUNCTION.array_size; i++)
+        for(size_t i = 0; i < function->arguments.size(); i++)
         {
-            if(strcmp(function->data.FUNCTION.arguments[i]->data.ARGUMENT.name, name) == 0)
+            if(strcmp(function->arguments[i]->data.ARGUMENT.name, name) == 0)
             {
                 return true;
             }
@@ -345,9 +346,9 @@ namespace Parser
     {
         if(function == NULL) return false;
         if(function->tag != Ast::FUNCTION) return false;
-        for(size_t i = 0; i < function->data.FUNCTION.array_size; i++)
+        for(size_t i = 0; i < function->arguments.size(); i++)
         {
-            if(strcmp(function->data.FUNCTION.arguments[i]->data.ARGUMENT.name, name) == 0)
+            if(strcmp(function->arguments[i]->data.ARGUMENT.name, name) == 0)
             {
                 return i;
             }
@@ -386,14 +387,16 @@ namespace Parser
     AST *parse_call(Lexer::Lexer *lexer, char *name, AST* function)
     {
         eat(lexer, Lexer::OPEN_PAREN);
-        AST** arguments = (AST**) calloc(sizeof(AST*), 0);
-        size_t array_size = 0;
+        // AST** arguments = (AST**) calloc(sizeof(AST*), 0);
+        std::vector<AST*> arguments;
+        // size_t array_size = 0;
         while (peek(lexer) != Lexer::CLOSE_PAREN)
         {
             AST* argument = parse_term(lexer, function);
-            arguments = (AST**) realloc(arguments, sizeof(AST*) * (array_size + 1));
-            arguments[array_size] = argument;
-            array_size++;
+            arguments.push_back(argument);
+            // arguments = (AST**) realloc(arguments, sizeof(AST*) * (array_size + 1));
+            // arguments[array_size] = argument;
+            // array_size++;
             if (peek(lexer) == Lexer::COMMA)
             {
                 eat(lexer, Lexer::COMMA);
@@ -401,6 +404,6 @@ namespace Parser
         }
         eat(lexer, Lexer::CLOSE_PAREN);
         // eat(lexer, Lexer::SEMICOLON);
-        return Ast::new_call(name, arguments, array_size);
+        return Ast::new_call(name, arguments);
     }
 }

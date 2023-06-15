@@ -4,30 +4,33 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <vector>
 
 #include "AST_TAG.h"
 
 typedef struct AST AST;
 struct AST {
   Ast::Tag tag;
+  std::vector<AST*> children;
+  std::vector<AST*> arguments;
   union data {
     struct NUMBER { char* number; } NUMBER;
     struct TUPLE { AST *left; AST *right; char* op; } TUPLE;
     struct EXPR { AST *expr; } EXPR;
     struct RETURN { AST *expr; } RETURN;
     struct ARGUMENT { char* name; AST *type; } ARGUMENT;
-    struct FUNCTION { char* name; AST *type; AST *body; AST* *arguments; size_t array_size; } FUNCTION;
-    struct NODE { AST* *children; size_t array_size; } NODE;
+    struct FUNCTION { char* name; AST *type; AST *body; } FUNCTION;
     struct TYPE { char* name; bool is_array; AST* array_size; } TYPE;
     struct DECLARATION { char* name; AST *type; } DECLARATION;
     struct ASSIGN { char* name; AST *value; } ASSIGN;
     struct IF { AST *condition; AST *body; } IF;
     struct WHILE { AST *condition; AST *body; } WHILE;
     struct FOR { AST *init; AST *condition; AST *increment; AST *body; } FOR;
-    struct CALL { char* name; AST* *arguments; size_t array_size; } CALL;
+    struct CALL { char* name; } CALL;
     struct VARIABLE { char* name; bool is_arg; int arg_index; } VARIABLE;
   } data;
 };
+
 namespace Ast
 {
   AST *new_single(Tag tag, AST *expr);
@@ -38,7 +41,7 @@ namespace Ast
   AST *new_expr(AST *expr);
   AST *new_return(AST *expr);
   AST *new_argument(char* name, AST *type);
-  AST *new_function(char* name, AST *type, AST *body, AST* *arguments, size_t array_size);
+  AST *new_function(char* name, AST *type, AST *body, std::vector<AST*> arguments);
   AST *new_type(char* name, bool is_array, AST* array_size);
   AST *new_declaration(char* name, AST *type);
   AST *new_assign(char* name, AST *value);
@@ -48,7 +51,7 @@ namespace Ast
   AST *new_break();
   AST *new_noop();
   AST *new_continue();
-  AST *new_call(char* name, AST* *arguments, size_t array_size);
+  AST *new_call(char* name, std::vector<AST*> arguments);
   AST *new_variable(char* name, bool is_arg, int arg_index);
   void add_argument(AST* ast, AST* argument);
   void add_child(AST* ast, AST* child);

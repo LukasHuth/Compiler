@@ -79,9 +79,9 @@ namespace Codegen
         if(builder == NULL){printf("Builder is NULL\n");return;}
         AST *ast = codegen->ast;
         // FILE *file = codegen->file;
-        for(size_t i = 0; i < ast->data.NODE.array_size; i++)
+        for(size_t i = 0; i < ast->children.size(); i++)
         {
-            AST *child = ast->data.NODE.children[i];
+            AST *child = ast->children[i];
             switch (child->tag)
             {
             case Ast::FUNCTION:
@@ -125,11 +125,11 @@ namespace Codegen
         if(module == NULL){printf("Module is NULL\n");return;}
         if(builder == NULL){printf("Builder is NULL\n");return;}
         char* function_name = ast->data.FUNCTION.name;
-        unsigned int param_count = ast->data.FUNCTION.array_size;
+        unsigned int param_count = ast->arguments.size();
         LLVMTypeRef *param_types = (LLVMTypeRef*) malloc(sizeof(LLVMTypeRef) * param_count);
         for(unsigned int i = 0; i < param_count; i++)
         {
-            AST *child = ast->data.FUNCTION.arguments[i];
+            AST *child = ast->arguments[i];
             AST *type = child->data.ARGUMENT.type;
             LLVMTypeRef type_ref = get_type(type);
             if(type_ref == NULL){printf("Type is NULL\n");return;}
@@ -160,15 +160,14 @@ namespace Codegen
         info->variables = (LLVMValueRef*) calloc(0, sizeof(LLVMValueRef));
         if(!isValidInfo(info)){printf("Info is invalid (function_body)\n");return;}
         if(ast->tag != Ast::NODE) return;
-        if(ast->data.NODE.array_size == 0) return;
-        if(ast->data.NODE.children == NULL) return;
+        if(ast->children.size() == 0) return;
 
         info->temp_count = 0;
         info->variable_count = 0;
 
-        for(size_t i = 0; i < ast->data.NODE.array_size; i++)
+        for(size_t i = 0; i < ast->children.size(); i++)
         {
-            AST *child = ast->data.NODE.children[i];
+            AST *child = ast->children[i];
             switch (child->tag)
             {
             case Ast::RETURN:
@@ -242,12 +241,10 @@ namespace Codegen
         if(ast == NULL){printf("AST is NULL\n");return NULL;}
         if(ast->tag != Ast::CALL){printf("AST is not a call\n");return NULL;}
         char *function_name = ast->data.CALL.name;
-        AST **arguments = ast->data.CALL.arguments;
-        size_t argc = ast->data.CALL.array_size;
         if(strcmp(function_name, "print") == 0)
         {
-            if(argc != 1){printf("Wrong number of arguments for print\n");return NULL;}
-            AST *argument = arguments[0];
+            if(ast->arguments.size() != 1){printf("Wrong number of arguments for print\n");return NULL;} // could break
+            AST *argument = ast->arguments[0];
             LLVMValueRef value = generate_expression(argument, info);
             if(value == NULL){printf("Value is NULL\n");return NULL;}
             LLVMTypeRef type = LLVMTypeOf(value);
@@ -292,13 +289,13 @@ namespace Codegen
         if(ast->tag != Ast::CALL){printf("AST is not a call\n");return NULL;}
         char *function_name = ast->data.CALL.name;
         if(is_std_function(function_name)) return generate_std_function_call(ast, info);
-        AST **arguments = ast->data.CALL.arguments;
-        size_t argc = ast->data.CALL.array_size;
+        // AST **arguments = ast->data.CALL.arguments;
+        size_t argc = ast->arguments.size();
         LLVMValueRef function = LLVMGetNamedFunction(info->module, function_name);
-        LLVMValueRef* args = (LLVMValueRef*) calloc(ast->data.CALL.array_size, sizeof(LLVMValueRef));
+        LLVMValueRef* args = (LLVMValueRef*) calloc(argc, sizeof(LLVMValueRef));
         for(size_t i = 0; i < argc; i++)
         {
-            args[i] = generate_expression(arguments[i], info);
+            args[i] = generate_expression(ast->arguments[i], info);
             if(args[i] == NULL) return NULL;
         }
         char* temp_name = (char*) calloc(10, sizeof(char));

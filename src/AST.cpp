@@ -2,14 +2,13 @@
 
 namespace Ast
 {
-
     const bool DEBUG = false;
     AST *new_node()
     {
-        AST *ast = new AST;
+        AST *ast = new AST();
         ast->tag = NODE;
-        ast->data.NODE = { .children = (AST**) calloc(sizeof(AST), 0), .array_size = 0 };
-        // AST ast = { .tag = NODE, .data = { .NODE = { .children = (AST**) calloc(sizeof(AST), 0), .array_size = 0 } } };
+        // ast->data.NODE = { .array_size = 0 };
+        // AST ast = { .tag = NODE, .= { .NODE = { .children = (AST**) calloc(sizeof(AST), 0), .array_size = 0 } } };
         return ast;
     }
 
@@ -18,36 +17,25 @@ namespace Ast
         // not finished
         if (ast->tag == NODE)
         {
-            ast->data.NODE.array_size++;
-            ast->data.NODE.children = (AST**) realloc(ast->data.NODE.children, sizeof(AST*) * (ast->data.NODE.array_size));
-            ast->data.NODE.children[ast->data.NODE.array_size - 1] = child;
+            // ast->data.NODE.array_size++;
+            ast->children.push_back(child);
+            // ast->data.NODE.children = (AST**) realloc(ast->data.NODE.children, sizeof(AST*) * (ast->data.NODE.array_size));
+            // ast->data.NODE.children[ast->data.NODE.array_size - 1] = child;
             return;
         }
     }
     void add_argument(AST* ast, AST* argument)
     {
-        if(ast->tag == FUNCTION)
-        {
-            ast->data.FUNCTION.array_size++;
-            ast->data.FUNCTION.arguments = (AST**) realloc(ast->data.FUNCTION.arguments, sizeof(AST*) * (ast->data.FUNCTION.array_size));
-            ast->data.FUNCTION.arguments[ast->data.FUNCTION.array_size - 1] = argument;
-            return;
-        }
-        if(ast->tag == CALL)
-        {
-            ast->data.CALL.array_size++;
-            ast->data.CALL.arguments = (AST**) realloc(ast->data.CALL.arguments, sizeof(AST*) * (ast->data.CALL.array_size));
-            ast->data.CALL.arguments[ast->data.CALL.array_size - 1] = argument;
-            return;
-        }
+        ast->arguments.push_back(argument);
+        return;
     }
 
     AST *new_expr(AST *expr)
     {
-        AST *ast = new AST;
+        AST *ast = new AST();
         ast->tag = EXPR;
         ast->data.EXPR = { .expr = expr };
-        // AST ast = { .tag = EXPR, .data = { .EXPR = { .expr = expr } } };
+        // AST ast = { .tag = EXPR, .= { .EXPR = { .expr = expr } } };
         return ast;
     }
     AST *new_return(AST *expr)
@@ -55,7 +43,7 @@ namespace Ast
         AST *ast = new AST;
         ast->tag = RETURN;
         ast->data.RETURN = { .expr = expr };
-        // AST ast = { .tag = RETURN, .data = { .RETURN = { .expr = expr } } };
+        // AST ast = { .tag = RETURN, .= { .RETURN = { .expr = expr } } };
         return ast;
     }
     AST *new_argument(char* name, AST *type)
@@ -63,15 +51,16 @@ namespace Ast
         AST *ast = new AST;
         ast->tag = ARGUMENT;
         ast->data.ARGUMENT = { .name = name, .type = type };
-        // AST ast = { .tag = ARGUMENT, .data = { .ARGUMENT = { .name = name, .type = type } } };
+        // AST ast = { .tag = ARGUMENT, .= { .ARGUMENT = { .name = name, .type = type } } };
         return ast;
     }
-    AST *new_function(char* name, AST *type, AST *body, AST* *arguments, size_t array_size)
+    AST *new_function(char* name, AST *type, AST *body, std::vector<AST*> arguments)
     {
         AST *ast = new AST;
         ast->tag = FUNCTION;
-        ast->data.FUNCTION = { .name = name, .type = type, .body = body, .arguments = arguments, .array_size = array_size };
-        // AST ast = { .tag = FUNCTION, .data = { .FUNCTION = { .name = name, .type = type, .body = body, .arguments = arguments, .array_size = array_size } } };
+        ast->arguments.insert(ast->arguments.end(), arguments.begin(), arguments.end());
+        ast->data.FUNCTION = { .name = name, .type = type, .body = body };
+        // AST ast = { .tag = FUNCTION, .= { .FUNCTION = { .name = name, .type = type, .body = body, .arguments = arguments, .array_size = array_size } } };
         return ast;
     }
     AST *new_type(char* name, bool is_array, AST* array_size)
@@ -79,7 +68,7 @@ namespace Ast
         AST *ast = new AST;
         ast->tag = TYPE;
         ast->data.TYPE = { .name = name, .is_array = is_array, .array_size = array_size };
-        // AST ast = { .tag = TYPE, .data = { .TYPE = { .name = name, .is_array = is_array, .array_size = array_size } } };
+        // AST ast = { .tag = TYPE, .= { .TYPE = { .name = name, .is_array = is_array, .array_size = array_size } } };
         return ast;
     }
     AST *new_declaration(char* name, AST *type)
@@ -87,7 +76,7 @@ namespace Ast
         AST *ast = new AST;
         ast->tag = DECLARATION;
         ast->data.DECLARATION = { .name = name, .type = type };
-        // AST ast = { .tag = DECLARATION, .data = { .DECLARATION = { .name = name, .type = type } } };
+        // AST ast = { .tag = DECLARATION, .= { .DECLARATION = { .name = name, .type = type } } };
         return ast;
     }
     AST *new_assign(char* name, AST *value)
@@ -95,7 +84,7 @@ namespace Ast
         AST *ast = new AST;
         ast->tag = ASSIGN;
         ast->data.ASSIGN = { .name = name, .value = value };
-        // AST ast = { .tag = ASSIGN, .data = { .ASSIGN = { .name = name, .value = value } } };
+        // AST ast = { .tag = ASSIGN, .= { .ASSIGN = { .name = name, .value = value } } };
         return ast;
     }
     AST *new_if(AST *condition, AST *body)
@@ -103,7 +92,7 @@ namespace Ast
         AST *ast = new AST;
         ast->tag = IF;
         ast->data.IF = { .condition = condition, .body = body };
-        // AST ast = { .tag = IF, .data = { .IF = { .condition = condition, .body = body } } };
+        // AST ast = { .tag = IF, .= { .IF = { .condition = condition, .body = body } } };
         return ast;
     }
     AST *new_while(AST *condition, AST *body)
@@ -111,7 +100,7 @@ namespace Ast
         AST *ast = new AST;
         ast->tag = WHILE;
         ast->data.WHILE = { .condition = condition, .body = body };
-        // AST ast = { .tag = WHILE, .data = { .WHILE = { .condition = condition, .body = body } } };
+        // AST ast = { .tag = WHILE, .= { .WHILE = { .condition = condition, .body = body } } };
         return ast;
     }
     AST *new_for(AST *init, AST *condition, AST *increment, AST *body)
@@ -119,36 +108,37 @@ namespace Ast
         AST *ast = new AST;
         ast->tag = FOR;
         ast->data.FOR = { .init = init, .condition = condition, .increment = increment, .body = body };
-        // AST ast = { .tag = FOR, .data = { .FOR = { .init = init, .condition = condition, .increment = increment, .body = body } } };
+        // AST ast = { .tag = FOR, .= { .FOR = { .init = init, .condition = condition, .increment = increment, .body = body } } };
         return ast;
     }
     AST *new_break()
     {
         AST *ast = new AST;
         ast->tag = BREAK;
-        // AST ast = { .tag = BREAK, .data = { NULL } };
+        // AST ast = { .tag = BREAK, .= { NULL } };
         return ast;
     }
     AST *new_noop()
     {
         AST *ast = new AST;
         ast->tag = NOOP;
-        // AST ast = { .tag = NOOP, .data = { NULL } };
+        // AST ast = { .tag = NOOP, .= { NULL } };
         return ast;
     }
     AST *new_continue()
     {
         AST *ast = new AST;
         ast->tag = CONTINUE;
-        // AST ast = { .tag = CONTINUE, .data = { NULL } };
+        // AST ast = { .tag = CONTINUE, .= { NULL } };
         return ast;
     }
-    AST *new_call(char* name, AST* *arguments, size_t array_size)
+    AST *new_call(char* name, std::vector<AST*> arguments)
     {
         AST *ast = new AST;
         ast->tag = CALL;
-        ast->data.CALL = { .name = name, .arguments = arguments, .array_size = array_size };
-        // AST ast = { .tag = CALL, .data = { .CALL = { .name = name, .arguments = arguments, .array_size = array_size } } };
+        ast->arguments.insert(ast->arguments.end(), arguments.begin(), arguments.end());
+        ast->data.CALL = { .name = name };
+        // AST ast = { .tag = CALL, .= { .CALL = { .name = name, .arguments = arguments, .array_size = array_size } } };
         return ast;
     }
     AST *new_variable(char* name, bool is_arg, int arg_index)
@@ -156,7 +146,7 @@ namespace Ast
         AST *ast = new AST;
         ast->tag = VARIABLE;
         ast->data.VARIABLE = { .name = name, .is_arg = is_arg, .arg_index = arg_index };
-        // AST ast = { .tag = VARIABLE, .data = { .VARIABLE = { .name = name, .is_arg = is_arg, .arg_index = arg_index } } };
+        // AST ast = { .tag = VARIABLE, .= { .VARIABLE = { .name = name, .is_arg = is_arg, .arg_index = arg_index } } };
         return ast;
     }
 
@@ -172,15 +162,15 @@ namespace Ast
         AST *ast = new AST;
         ast->tag = NUMBER;
         ast->data.NUMBER = { .number = number };
-        // AST ast = { .tag = NUMBER, .data = { .NUMBER = { .number = number } } };
+        // AST ast = { .tag = NUMBER, .= { .NUMBER = { .number = number } } };
         return ast;
     }
     AST *new_tuple(Tag tag, AST *left, AST *right, char* op)
     {
-        AST *ast = new AST;
+        AST *ast = new AST();
         ast->tag = tag;
         ast->data.TUPLE = { .left = left, .right = right, .op = op };
-        // AST ast = { .tag = tag, .data = { .TUPLE = { .left = left, .right = right, .op = op } } };
+        // AST ast = { .tag = tag, .= { .TUPLE = { .left = left, .right = right, .op = op } } };
         return ast;
     }
     void print(AST *ast)
@@ -213,10 +203,10 @@ namespace Ast
         case FUNCTION:
             print(ast->data.FUNCTION.type);
             printf(" %s(", ast->data.FUNCTION.name);
-            for (size_t i = 0; i < ast->data.FUNCTION.array_size; i++)
+            for (size_t i = 0; i < ast->arguments.size(); i++)
             {
-                print(ast->data.FUNCTION.arguments[i]);
-                if (i != ast->data.FUNCTION.array_size - 1)
+                print(ast->arguments[i]);
+                if (i < ast->arguments.size() - 1)
                 {
                     printf(", ");
                 }
@@ -226,9 +216,9 @@ namespace Ast
             printf("}\n");
             break;
         case NODE:
-            for (size_t i = 0; i < ast->data.NODE.array_size; i++)
+            for (size_t i = 0; i < ast->children.size(); i++)
             {
-                print(ast->data.NODE.children[i]);
+                print(ast->children[i]);
                 printf("\n");
             }
             break;
@@ -282,10 +272,10 @@ namespace Ast
             break;
         case CALL:
             printf("%s(", ast->data.CALL.name);
-            for (size_t i = 0; i < ast->data.CALL.array_size; i++)
+            for (size_t i = 0; i < ast->arguments.size(); i++)
             {
-                print(ast->data.CALL.arguments[i]);
-                if (i != ast->data.CALL.array_size - 1)
+                print(ast->arguments[i]);
+                if (i != ast->arguments.size() - 1)
                 {
                     printf(", ");
                 }
@@ -310,31 +300,30 @@ namespace Ast
             if(DEBUG) printf("free return\n");
             break;
         case NODE:
-            if(DEBUG) printf("count: %ld\n", ast->data.NODE.array_size);
-            for (size_t i = 0; i < ast->data.NODE.array_size; i++)
+            if(DEBUG) printf("count: %ld\n", ast->children.size());
+            for (size_t i = 0; i < ast->children.size(); i++)
             {
-                Free(ast->data.NODE.children[i]);
-                // free(ast->data.NODE.children[i]);
+                Free(ast->children[i]);
             }
-            free(ast->data.NODE.children);
+            // free(ast->data.NODE.children);
             if(DEBUG) printf("free node\n");
             break;
         case FUNCTION:
             Free(ast->data.FUNCTION.type);
             Free(ast->data.FUNCTION.body);
-            for (size_t i = 0; i < ast->data.FUNCTION.array_size; i++)
+            for (size_t i = 0; i < ast->arguments.size(); i++)
             {
-                Free(ast->data.FUNCTION.arguments[i]);
+                Free(ast->arguments[i]);
             }
-            free(ast->data.FUNCTION.arguments);
+            // free(ast->data.FUNCTION.arguments);
             if(DEBUG) printf("free function\n");
             break;
         case CALL:
-            for (size_t i = 0; i < ast->data.CALL.array_size; i++)
+            for (size_t i = 0; i < ast->arguments.size(); i++)
             {
-                Free(ast->data.CALL.arguments[i]);
+                Free(ast->arguments[i]);
             }
-            free(ast->data.CALL.arguments);
+            // free(ast->data.CALL.arguments);
             if(DEBUG) printf("free call\n");
             break;
         case ARGUMENT:
