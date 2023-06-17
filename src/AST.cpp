@@ -272,3 +272,8 @@ void AST::print()
         break;
     }
 }
+bool AST::has_same_type(AST* ast)
+{
+    // TODO: check if the value has the same type as the type
+    return true;
+}

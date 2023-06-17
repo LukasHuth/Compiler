@@ -31,6 +31,7 @@ class AST {
     void add_argument(AST* argument) {this->arguments.push_back(argument);}
     void add_child(AST* child) {this->children.push_back(child);}
     void print();
+    bool has_same_type(AST* ast);
     AST(){}
     AST(Ast::Tag tag){this->tag = tag;}
     AST(Ast::Tag tag, char* data);
