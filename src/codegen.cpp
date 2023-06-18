@@ -9,33 +9,32 @@ namespace Codegen
     struct INTERNAL_INFO
     {
         size_t temp_count;
-        llvm::AttrBuilder builder;
-        LLVMValueRef function;
-        LLVMValueRef* variables;
+        // llvm::IRBuilder<> builder;
+        llvm::Function* function;
+        std::vector<llvm::Value*> variable_values;
         llvm::Module* module;
-        size_t variable_count;
+        llvm::LLVMContext* context;
     };
 
     bool isValidInfo(InternalInfo *info)
     {
         return (
             info != NULL &&
-            info->variables != NULL &&
             info->function != NULL &&
             info->module != NULL
         );
     }
 
-    void generate_function_body(AST *ast, InternalInfo *info);
-    LLVMValueRef generate_binary_expression(AST *ast, InternalInfo *info);
-    LLVMValueRef generate_expression(AST *ast, InternalInfo *info);
-    void generate_return(AST *ast, InternalInfo *info);
-    void generate_variable_declaration(AST *ast, InternalInfo *info);
-    void generate_variable_assignment(AST *ast, InternalInfo *info);
-    LLVMValueRef generate_function_call(AST *ast, InternalInfo *info);
-    void generate_function(AST *ast, llvm::Module* module, llvm::AttrBuilder builder, llvm::LLVMContext* context);
+    void generate_function_body(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder);
+    llvm::Value* generate_binary_expression(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder);
+    llvm::Value* generate_expression(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder);
+    void generate_return(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder);
+    void generate_variable_declaration(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder);
+    void generate_variable_assignment(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder);
+    llvm::Value* generate_function_call(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder);
+    void generate_function(AST *ast, llvm::Module* module, llvm::IRBuilder<> builder, llvm::LLVMContext* context);
 
-    void codegen_generate(Codegen *codegen, llvm::Module* module, llvm::AttrBuilder builder);
+    void codegen_generate(Codegen *codegen, llvm::Module* module, llvm::IRBuilder<> builder, llvm::LLVMContext* context);
 
     void init(AST *ast)
     {
@@ -50,6 +49,8 @@ namespace Codegen
         llvm::InitializeNativeTargetAsmParser();
         // LLVMInitializeNativeAsmParser();
 
+        std::cout << "stage 1" << std::endl;
+
         // LLVMModuleRef module = LLVMModuleCreateWithName("new_module");
         llvm::LLVMContext* context = new llvm::LLVMContext();
         llvm::Module *module = new llvm::Module("new_module", *context);
@@ -61,13 +62,16 @@ namespace Codegen
         // free(target);
         // auto builder = llvm::createBuilder();
 
-        llvm::AttrBuilder builder = llvm::AttrBuilder();
+        std::cout << "stage 2" << std::endl;
+
+        // llvm::IRBuilder<> builder = llvm::IRBuilder<>();
+        llvm::IRBuilder<> builder(*context);
 
         // LLVMBuilderRef builder = LLVMCreateBuilder(); // can be removed
 
         // llvm::Type *int_type = llvm::Type::getInt32Ty(*context);
 
-        LLVMTypeRef printf_args[] = {LLVMPointerType(LLVMInt8Type(), 0)};
+        // LLVMTypeRef printf_args[] = {LLVMPointerType(LLVMInt8Type(), 0)};
 
         llvm::Type *printf_args_type[] = {llvm::PointerType::get(llvm::IntegerType::get(*context, 8), 0)};
 
@@ -83,11 +87,14 @@ namespace Codegen
 
         // LLVMAddFunction(module, "puts", LLVMFunctionType(LLVMInt32Type(), printf_args, 1, 0));
         
+        std::cout << "stage 3" << std::endl;
+
         // Codegen *codegen = (Codegen*) malloc(sizeof(Codegen));
         Codegen *codegen = new Codegen(ast);
 
         codegen_generate(codegen, module, builder, context);
 
+        std::cout << "stage 4" << std::endl;
         // LLVMWriteBitcodeToFile(module, "main.bc");
         // llvm::WriteBitcodeToFile(*module, "main.bc");
         llvm::verifyModule(*module);
@@ -103,12 +110,13 @@ namespace Codegen
         // llvm::disposeM
         // llvm::DisposeBuilder(builder);
     }
-    void codegen_generate(Codegen *codegen, llvm::Module* module, llvm::AttrBuilder builder, llvm::LLVMContext* context)
+    void codegen_generate(Codegen *codegen, llvm::Module* module, llvm::IRBuilder<> builder, llvm::LLVMContext* context)
     {
         if(codegen == NULL){printf("Codegen is NULL\n");return;}
         if(codegen->ast == NULL){printf("AST is NULL\n");return;}
         if(module == NULL){printf("Module is NULL\n");return;}
         AST *ast = codegen->ast;
+        std::cout << "generate start" << std::endl;
         for(size_t i = 0; i < ast->children.size(); i++)
         {
             AST *child = ast->children[i];
@@ -122,26 +130,27 @@ namespace Codegen
                 break;
             }
         }
+        std::cout << "generate start" << std::endl;
     }
     bool file_and_ast_valid(FILE *file, AST *ast)
     {
         return file != NULL && ast != NULL;
     }
-    LLVMTypeRef get_type(AST *ast)
+    llvm::Type* get_type(AST *ast, llvm::LLVMContext* context)
     {
         if(ast == NULL){printf("AST is NULL\n");return NULL;}
         char* type_name = ast->data.TYPE.name;
         if(strcmp(type_name, "int") == 0)
         {
-            return LLVMInt32Type();
+            return llvm::IntegerType::get(*context, 32);
         }
         if(strcmp(type_name, "float") == 0)
         {
-            return LLVMDoubleType();
+            return llvm::Type::getDoubleTy(*context);
         }
         else if(strcmp(type_name, "void") == 0)
         {
-            return LLVMVoidType();
+            return llvm::Type::getVoidTy(*context);
         }
         else
         {
@@ -149,19 +158,21 @@ namespace Codegen
             return NULL;
         }
     }
-    void generate_function(AST *ast, llvm::Module* module, llvm::AttrBuilder builder, llvm::LLVMContext* context)
+    void generate_function(AST *ast, llvm::Module* module, llvm::IRBuilder<> builder, llvm::LLVMContext* context)
     {
+        std::cout << "generate_function start" << std::endl;
+        // TODO: breaking in this function
         if(ast == NULL){printf("AST is NULL\n");return;}
         if(module == NULL){printf("Module is NULL\n");return;}
         char* function_name = ast->data.FUNCTION.name;
-        unsigned int param_count = ast->arguments.size();
+        // unsigned int param_count = ast->arguments.size();
         // LLVMTypeRef *param_types = (LLVMTypeRef*) malloc(sizeof(LLVMTypeRef) * param_count);
         std::vector<llvm::Type*> param_types;
         for(AST* child : ast->arguments)
         {
             AST *type = child->data.VAR_MANIP.ast;
-            // LLVMTypeRef type_ref = get_type(type);
-            llvm::Type *type_ref = llvm::IntegerType::get(*context, 32); // TODO: change to get_type and change get_type to return llvm::Type*
+            llvm::Type* type_ref = get_type(type, context);
+            // llvm::Type *type_ref = llvm::IntegerType::get(*context, 32); // TODO: change to get_type and change get_type to return llvm::Type*
             if(type_ref == NULL){printf("Type is NULL\n");return;}
             param_types.push_back(type_ref);
         }
@@ -177,7 +188,12 @@ namespace Codegen
         llvm::FunctionType* function_type = llvm::FunctionType::get(llvm::IntegerType::get(*context, 32), param_types, false); // TODO: change to adjust to function specific type
         // LLVMValueRef function = LLVMAddFunction(module, function_name, function_type);
         // llvm::Function::Create(function_type, llvm::GlobalValue::LinkageTypes::, function_name, module);
-        module->getOrInsertFunction(function_name, function_type); // HELP: https://releases.llvm.org/2.6/docs/tutorial/JITTutorial1.html
+        // llvm::Function module->getOrInsertFunction(function_name, function_type); // HELP: https://releases.llvm.org/2.6/docs/tutorial/JITTutorial1.html
+        llvm::Function* function = llvm::Function::Create(function_type, llvm::Function::ExternalLinkage, function_name, module);
+        function->setCallingConv(llvm::CallingConv::C);
+        llvm::BasicBlock* entry = llvm::BasicBlock::Create(*context, "entry", function);
+        function->getBasicBlockList().push_back(entry);
+        // llvm::IRBuilder<> builder(entry);
         // llvm::Function* function = llvm::Function::Create(function_type, llvm::Function::ExternalLinkage, function_name, module);
         // llvm::Function::Create(llvm::FunctionType::get(llvm::IntegerType::get(*context, 32), printf_args_type_ref, false), llvm::Function::ExternalLinkage, "puts", module);
         // LLVMSetLinkage(function, LLVMExternalLinkage);
@@ -185,27 +201,31 @@ namespace Codegen
         // LLVMBasicBlockRef entry = LLVMAppendBasicBlock(function, "entry");
         // LLVMPositionBuilderAtEnd(builder, entry);
         InternalInfo *info = (InternalInfo*) malloc(sizeof(InternalInfo));
-        info->builder = builder;
+        // InternalInfo *info = new InternalInfo(); // POSSIBLE CRASH
+        // info->builder = builder;
         info->temp_count = 0;
-        info->variables = NULL;
-        info->variable_count = 0;
+        // info->variables = NULL;
+        // info->variable_count = 0;
         info->function = function;
         info->module = module;
-        generate_function_body(ast->data.FUNCTION.body, info);
-        free(info->variables);
+        info->context = context;
+        generate_function_body(ast->data.FUNCTION.body, info, builder);
+        std::cout << "generate_function end" << std::endl;
+        // free(info->variables);
         free(info);
     }
-    void generate_function_body(AST *ast, InternalInfo *info)
+    void generate_function_body(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder)
     {
         if(ast == NULL){printf("AST is NULL\n");return;}
-        if(info->variables != NULL) free(info->variables);
-        info->variables = (LLVMValueRef*) calloc(0, sizeof(LLVMValueRef));
+        // if(info->variables != NULL) free(info->variables);
+        // info->variables = (LLVMValueRef*) calloc(0, sizeof(LLVMValueRef));
+        info->variable_values.clear();
         if(!isValidInfo(info)){printf("Info is invalid (function_body)\n");return;}
         if(ast->tag != Ast::NODE) return;
         if(ast->children.size() == 0) return;
 
         info->temp_count = 0;
-        info->variable_count = 0;
+        // info->variable_count = 0;
 
         for(size_t i = 0; i < ast->children.size(); i++)
         {
@@ -213,17 +233,17 @@ namespace Codegen
             switch (child->tag)
             {
             case Ast::RETURN:
-                generate_return(child, info);
+                generate_return(child, info, builder);
                 break;
             case Ast::DECLARATION:
-                generate_variable_declaration(child, info);
+                generate_variable_declaration(child, info, builder);
                 break;
             case Ast::ASSIGN:
-                generate_variable_assignment(child, info);
+                generate_variable_assignment(child, info, builder);
                 break;
             case Ast::CALL:
                 printf("Call begin\n");
-                generate_function_call(child, info);
+                generate_function_call(child, info, builder);
                 printf("Call end\n");
                 break;
             default:
@@ -232,13 +252,14 @@ namespace Codegen
             }
         }
     }
-    LLVMValueRef get_number_type(AST *ast)
+    llvm::Value* get_number_type(AST *ast, llvm::LLVMContext* context)
     {
         if(ast == NULL) return NULL;
         char* number = ast->data.NUMBER.number;
         float f;
         (void)sscanf(number, "%f", &f);
-        LLVMValueRef value = NULL;
+        // LLVMValueRef value = NULL;
+        llvm::Value* value = NULL;
         bool is_float = false;
         for(size_t i = 0; i < strlen(number); i++)
         {
@@ -252,11 +273,13 @@ namespace Codegen
         if(is_float)
         {
             printf("----------\nnumber: %f\n", atof(number));
-            value = LLVMConstReal(LLVMDoubleType(), atof(number));
+            // value = LLVMConstReal(LLVMDoubleType(), atof(number));
+            value = llvm::ConstantFP::get(*context, llvm::APFloat(atof(number)));
             return value;
         } else {
             printf("number: %s\n", number);
-            value = LLVMConstInt(LLVMInt32Type(), atoi(number), 0);
+            // value = LLVMConstInt(LLVMInt32Type(), atoi(number), 0);
+            value = llvm::ConstantInt::get(*context, llvm::APInt(32, atoi(number), true));
         }
         return value;
     }
@@ -265,19 +288,26 @@ namespace Codegen
         if(strcmp(name, "print") == 0) return true;
         return false;
     }
-    LLVMTypeRef get_variable_type(char* name, InternalInfo *info)
+    llvm::Type* get_variable_type(char* name, InternalInfo *info)
     {
         if(!isValidInfo(info)){printf("Info is invalid (variable_type)\n");return NULL;}
-        for(size_t i = 0; i < info->variable_count; i++)
+        // for(size_t i = 0; i < info->variable_count; i++)
+        // {
+        //     if(strcmp(name, LLVMGetValueName(info->variables[i])) == 0)
+        //     {
+        //         return info->variables[i];
+        //     }
+        // }
+        for(llvm::Value* variable : info->variable_values)
         {
-            if(strcmp(name, LLVMGetValueName(info->variables[i])) == 0)
+            if(variable->getName() == name)
             {
-                return LLVMTypeOf(info->variables[i]);
+                return variable->getType();
             }
         }
         return NULL;
     }
-    LLVMValueRef generate_std_function_call(AST *ast, InternalInfo *info)
+    llvm::Value* generate_std_function_call(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder)
     {
         if(!isValidInfo(info)){printf("Info is invalid(std function call)\n");return NULL;}
         if(ast == NULL){printf("AST is NULL\n");return NULL;}
@@ -287,142 +317,198 @@ namespace Codegen
         {
             if(ast->arguments.size() != 1){printf("Wrong number of arguments for print\n");return NULL;} // could break
             AST *argument = ast->arguments[0];
-            LLVMValueRef value = generate_expression(argument, info);
+            // LLVMValueRef value = generate_expression(argument, info);
+            llvm::Value* value = generate_expression(argument, info, builder);
             if(value == NULL){printf("Value is NULL\n");return NULL;}
-            LLVMTypeRef type = LLVMTypeOf(value);
-            char* type_name = LLVMPrintTypeToString(type);
+            // LLVMTypeRef type = LLVMTypeOf(value);
+            llvm::Type* type = value->getType();
+            // llvm::StringRef type_name = type->getStructName();
+            llvm::Type::TypeID type_id = type->getTypeID();
+            // char* type_name = LLVMPrintTypeToString(type);
             if(type == NULL){printf("Type is NULL\n");return NULL;}
-            LLVMValueRef function = LLVMGetNamedFunction(info->module, "printf");
+            // LLVMValueRef function = LLVMGetNamedFunction(info->module, "printf");
+            llvm::Function* function = info->module->getFunction("printf");
             if(function == NULL)
             {
-                LLVMTypeRef *printf_args = (LLVMTypeRef*) calloc(1, sizeof(LLVMTypeRef));
-                printf_args[0] = LLVMPointerType(LLVMInt8Type(), 0);
-                LLVMTypeRef printf_type = LLVMFunctionType(LLVMInt32Type(), printf_args, 1, true);
-                free(printf_args);
-                function = LLVMAddFunction(info->module, "printf", printf_type);
-                LLVMSetLinkage(function, LLVMExternalLinkage);
-                LLVMSetFunctionCallConv(function, LLVMCCallConv);
+                // LLVMTypeRef *printf_args = (LLVMTypeRef*) calloc(1, sizeof(LLVMTypeRef));
+                std::vector<llvm::Type*> printf_args;
+                // printf_args[0] = LLVMPointerType(LLVMInt8Type(), 0);
+                printf_args.push_back(llvm::Type::getInt8PtrTy(*info->context));
+                llvm::FunctionType* printf_type = llvm::FunctionType::get(llvm::Type::getInt32Ty(*info->context), printf_args, true);
+                // LLVMTypeRef printf_type = LLVMFunctionType(LLVMInt32Type(), printf_args, 1, true);
+                // free(printf_args);
+                // function = LLVMAddFunction(info->module, "printf", printf_type);
+                function = llvm::Function::Create(printf_type, llvm::Function::ExternalLinkage, "printf", info->module);
+                // LLVMSetLinkage(function, LLVMExternalLinkage);
+                function->setLinkage(llvm::Function::ExternalLinkage);
+                function->setCallingConv(llvm::CallingConv::C);
+                // LLVMSetFunctionCallConv(function, LLVMCCallConv);
             }
 
-            LLVMValueRef ret = NULL;
-            if(strcmp(type_name, "i32") == 0)
+            llvm::Value* ret = NULL;
+            if(type_id == llvm::Type::IntegerTyID)
             {
-                LLVMValueRef format_str = LLVMBuildGlobalStringPtr(info->builder, "%d\n", "format_str_d");
-                LLVMValueRef args[2] = {format_str, value};
-                ret = LLVMBuildCall(info->builder, function, args, 2, "ret");
-            } else if(strcmp(type_name, "double") == 0)
+                // LLVMValueRef format_str = LLVMBuildGlobalStringPtr(info->builder, "%d\n", "format_str_d");
+                // LLVMValueRef args[2] = {format_str, value};
+                // ret = LLVMBuildCall(info->builder, function, args, 2, "ret");
+                llvm::Value* format_str = builder.CreateGlobalStringPtr("%d\n", "format_str_d");
+                std::vector<llvm::Value*> args;
+                args.push_back(format_str);
+                args.push_back(value);
+                ret = builder.CreateCall(function, args, "ret");
+            } else if(type_id == llvm::Type::DoubleTyID)
             {
-                LLVMValueRef format_str = LLVMBuildGlobalStringPtr(info->builder, "%f\n", "format_str_f");
-                LLVMValueRef args[2] = {format_str, value};
-                ret = LLVMBuildCall(info->builder, function, args, 2, "ret");
+                // LLVMValueRef format_str = LLVMBuildGlobalStringPtr(info->builder, "%f\n", "format_str_f");
+                // LLVMValueRef args[2] = {format_str, value};
+                // ret = LLVMBuildCall(info->builder, function, args, 2, "ret");
+                llvm::Value* format_str = builder.CreateGlobalStringPtr("%f\n", "format_str_f");
+                std::vector<llvm::Value*> args;
+                args.push_back(format_str);
+                args.push_back(value);
+                ret = builder.CreateCall(function, args, "ret");
             }
             if(ret == NULL) printf("Unknown type for print\n");
-            free(type_name);
+            // free(type_name);
             return ret;
         }
         printf("Unknown std function: %s\n", function_name);
         return NULL;
     }
-    LLVMValueRef generate_function_call(AST *ast, InternalInfo *info)
+    llvm::Value* generate_function_call(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder)
     {
         if(!isValidInfo(info)){printf("Info is invalid(function call)\n");return NULL;}
         if(ast == NULL){printf("AST is NULL\n");return NULL;}
         if(ast->tag != Ast::CALL){printf("AST is not a call\n");return NULL;}
         char *function_name = ast->data.CALL.name;
-        if(is_std_function(function_name)) return generate_std_function_call(ast, info);
+        if(is_std_function(function_name)) return generate_std_function_call(ast, info, builder);
         size_t argc = ast->arguments.size();
-        LLVMValueRef function = LLVMGetNamedFunction(info->module, function_name);
-        LLVMValueRef* args = (LLVMValueRef*) calloc(argc, sizeof(LLVMValueRef));
+        // LLVMValueRef function = LLVMGetNamedFunction(info->module, function_name);
+        llvm::Function* function = info->module->getFunction(function_name);
+        // LLVMValueRef* args = (LLVMValueRef*) calloc(argc, sizeof(LLVMValueRef));
+        std::vector<llvm::Value*> args;
         for(size_t i = 0; i < argc; i++)
         {
-            args[i] = generate_expression(ast->arguments[i], info);
+            // args[i] = generate_expression(ast->arguments[i], info, builder);
+            llvm::Value* arg = generate_expression(ast->arguments[i], info, builder);
+            args.push_back(arg);
             if(args[i] == NULL) return NULL;
         }
         char* temp_name = (char*) calloc(10, sizeof(char));
         sprintf(temp_name, "_%ld", info->temp_count++);
         temp_name = (char*) realloc(temp_name, sizeof(char) * (strlen(temp_name) + 1));
-        LLVMValueRef result = LLVMBuildCall(info->builder, function, args, argc, temp_name);
+        // LLVMValueRef result = LLVMBuildCall(info->builder, function, args, argc, temp_name);
+        llvm::Value* result = builder.CreateCall(function, args, temp_name);
         free(temp_name);
-        free(args);
+        // free(args);
         return result;
     }
-    void generate_variable_assignment(AST *ast, InternalInfo *info)
+    void generate_variable_assignment(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder)
     {
         if(ast == NULL){printf("AST is NULL\n");return;}
         if(!isValidInfo(info)){printf("Info is invalid(variable assignment)\n");return;}
         if(ast->tag != Ast::ASSIGN){printf("AST is not an assignment\n");return;}
         char* name = ast->data.VAR_MANIP.name;
         AST *expr = ast->data.VAR_MANIP.ast;
-        LLVMValueRef value = generate_expression(expr, info);
+        llvm::Value* value = generate_expression(expr, info, builder);
         if(value == NULL) return;
-        LLVMValueRef variable = NULL;
-        for(size_t i = 0; i < info->variable_count; i++)
+        // LLVMValueRef variable = NULL;
+        llvm::Value* variable = NULL;
+        // for(size_t i = 0; i < info->variable_count; i++)
+        // {
+        //     if(strcmp(name, LLVMGetValueName(info->variables[i])) == 0)
+        //     {
+        //         variable = info->variables[i];
+        //         break;
+        //     }
+        // }
+        for(llvm::Value* variable : info->variable_values)
         {
-            if(strcmp(name, LLVMGetValueName(info->variables[i])) == 0)
+            if(variable->getName() == name)
             {
-                variable = info->variables[i];
+                variable = variable;
                 break;
             }
         }
-        LLVMBuildStore(info->builder, value, variable);
+        // LLVMBuildStore(info->builder, value, variable);
+        builder.CreateStore(value, variable);
     }
-    void generate_variable_declaration(AST *ast, InternalInfo *info)
+    void generate_variable_declaration(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder)
     {
         if(ast == NULL){printf("AST is NULL\n");return;}
         if(!isValidInfo(info)){printf("Info is invalid(variable_declaration)\n");return;}
         if(ast->tag != Ast::DECLARATION){printf("AST is not a declaration\n");return;}
-        LLVMTypeRef type = get_type(ast->data.VAR_MANIP.ast);
-        LLVMValueRef value = LLVMBuildAlloca(info->builder, type, ast->data.VAR_MANIP.name);
-        LLVMSetInitializer(value, LLVMConstInt(LLVMInt32Type(), 0, 0));
-        info->variable_count++;
-        info->variables = (LLVMValueRef*) realloc(info->variables, sizeof(LLVMValueRef) * info->variable_count);
-        info->variables[info->variable_count - 1] = value;
+        llvm::Type* type = get_type(ast->data.VAR_MANIP.ast, info->context);
+        // LLVMValueRef value = LLVMBuildAlloca(info->builder, type, ast->data.VAR_MANIP.name);
+        // TODO: Add initializer possibly
+        llvm::Value* value = builder.CreateAlloca(type, 0, ast->data.VAR_MANIP.name);
+        // LLVMSetInitializer(value, LLVMConstInt(LLVMInt32Type(), 0, 0));
+        // value->setInitializer(llvm::ConstantInt::get(llvm::Type::getInt32Ty(info->context), 0));
+        info->variable_values.push_back(value);
+        // info->variable_count++;
+        // info->variables = (LLVMValueRef*) realloc(info->variables, sizeof(LLVMValueRef) * info->variable_count);
+        // info->variables[info->variable_count - 1] = value;
     }
-    void generate_return(AST *ast, InternalInfo* info)
+    void generate_return(AST *ast, InternalInfo* info, llvm::IRBuilder<> builder)
     {
         if(ast == NULL) return;
         if(ast->data.RETURN.expr == NULL) return;
         if(!isValidInfo(info)) return;
         AST *expr = ast->data.RETURN.expr;
-        LLVMValueRef value = generate_expression(expr, info);
+        llvm::Value *value = generate_expression(expr, info, builder);
+        // LLVMValueRef value = generate_expression(expr, info);
         if(value == NULL) return;
-        LLVMBuildRet(info->builder, value);
+        llvm::BasicBlock* block = builder.GetInsertBlock();
+        llvm::LLVMContext& context = block->getContext();
+        llvm::ReturnInst::Create(context, value, block);
+        // LLVMBuildRet(info->builder, value);
     }
-    LLVMValueRef generate_expression(AST *ast, InternalInfo *info)
+    llvm::Value* generate_expression(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder)
     {
         if(ast == NULL) return NULL;
         if(!isValidInfo(info)) return NULL;
         char* temp_name = (char*) calloc(10, sizeof(char)); // some leak is happening with this
-        LLVMValueRef value = NULL;
+        // LLVMValueRef value = NULL;
+        llvm::Value* value = NULL;
         switch (ast->tag)
         {
             case Ast::NUMBER:
-                value = get_number_type(ast);
+                value = get_number_type(ast, info->context);
                 break;
             case Ast::VARIABLE:
                 if(ast->data.VARIABLE.is_arg)
                 {
-                    return LLVMGetParam(info->function, ast->data.VARIABLE.arg_index);
+                    // return LLVMGetParam(info->function, ast->data.VARIABLE.arg_index);
+                    std::cout << "Critical point begin" << std::endl;
+                    return info->function->arg_begin() + ast->data.VARIABLE.arg_index; // INFO: This could be wrong
+                    std::cout << "Critical point begin" << std::endl;
                 }
                 sprintf(temp_name, "_%ld", info->temp_count++);
                 temp_name = (char*) realloc(temp_name, sizeof(char) * (strlen(temp_name) + 1));
                 value = NULL;
-                for(size_t i = 0; i < info->variable_count; i++)
+                // for(size_t i = 0; i < info->variable_count; i++)
+                // {
+                //     if(strcmp(ast->data.VARIABLE.name, LLVMGetValueName(info->variables[i])) == 0)
+                //     {
+                //         value = info->variables[i];
+                //     }
+                // }
+                for(llvm::Value* variable : info->variable_values)
                 {
-                    if(strcmp(ast->data.VARIABLE.name, LLVMGetValueName(info->variables[i])) == 0)
+                    if(variable->getName() == ast->data.VARIABLE.name)
                     {
-                        value = info->variables[i];
+                        value = variable;
                     }
                 }
                 if(value == NULL) return NULL;
-                value = LLVMBuildLoad(info->builder, value, temp_name);
+                // value = LLVMBuildLoad(info->builder, value, temp_name);
+                value = builder.CreateLoad(value, temp_name);
                 free(temp_name);
                 return value;
             case Ast::BINARY_OP:
-                value = generate_binary_expression(ast, info);
+                value = generate_binary_expression(ast, info, builder);
                 break;
             case Ast::CALL:
-                value = generate_function_call(ast, info);
+                value = generate_function_call(ast, info, builder);
                 break;
             case Ast::EXPR:
             case Ast::RETURN:
@@ -446,23 +532,27 @@ namespace Codegen
         free(temp_name);
         return value;
     }
-    LLVMValueRef generate_binary_operation_with_int(char* op, LLVMValueRef left, LLVMValueRef right, char* temp_name, llvm::AttrBuilder builder)
+    llvm::Value* generate_binary_operation_with_int(char* op, llvm::Value* left, llvm::Value* right, char* temp_name, llvm::IRBuilder<> builder)
     {
         if (strcmp(op, "+") == 0)
         {
-            return LLVMBuildAdd(builder, left, right, temp_name);
+            // return LLVMBuildAdd(builder, left, right, temp_name);
+            return builder.CreateAdd(left, right, temp_name);
         }
         else if (strcmp(op, "-") == 0)
         {
-            return LLVMBuildSub(builder, left, right, temp_name);
+            // return LLVMBuildSub(builder, left, right, temp_name);
+            return builder.CreateSub(left, right, temp_name);
         }
         else if (strcmp(op, "*") == 0)
         {
-            return LLVMBuildMul(builder, left, right, temp_name);
+            // return LLVMBuildMul(builder, left, right, temp_name);
+            return builder.CreateMul(left, right, temp_name);
         }
         else if (strcmp(op, "/") == 0)
         {
-            return LLVMBuildSDiv(builder, left, right, temp_name);
+            // return LLVMBuildSDiv(builder, left, right, temp_name);
+            return builder.CreateSDiv(left, right, temp_name);
         }
         else
         {
@@ -470,23 +560,27 @@ namespace Codegen
             return NULL;
         }
     }
-    LLVMValueRef generate_binary_operation_with_double(char* op, LLVMValueRef left, LLVMValueRef right, char* temp_name, llvm::AttrBuilder builder)
+    llvm::Value* generate_binary_operation_with_double(char* op, llvm::Value* left, llvm::Value* right, char* temp_name, llvm::IRBuilder<> builder)
     {
         if (strcmp(op, "+") == 0)
         {
-            return LLVMBuildFAdd(builder, left, right, temp_name);
+            // return LLVMBuildFAdd(builder, left, right, temp_name);
+            return builder.CreateFAdd(left, right, temp_name);
         }
         else if (strcmp(op, "-") == 0)
         {
-            return LLVMBuildFSub(builder, left, right, temp_name);
+            // return LLVMBuildFSub(builder, left, right, temp_name);
+            return builder.CreateFSub(left, right, temp_name);
         }
         else if (strcmp(op, "*") == 0)
         {
-            return LLVMBuildFMul(builder, left, right, temp_name);
+            // return LLVMBuildFMul(builder, left, right, temp_name);
+            return builder.CreateFMul(left, right, temp_name);
         }
         else if (strcmp(op, "/") == 0)
         {
-            return LLVMBuildFDiv(builder, left, right, temp_name);
+            // return LLVMBuildFDiv(builder, left, right, temp_name);
+            return builder.CreateFDiv(left, right, temp_name);
         }
         else
         {
@@ -494,14 +588,14 @@ namespace Codegen
             return NULL;
         }
     }
-    LLVMValueRef generate_binary_operation_with_string(char* op, LLVMValueRef left, LLVMValueRef right, char* temp_name, llvm::AttrBuilder builder)
+    llvm::Value* generate_binary_operation_with_string(char* op, llvm::Value* left, llvm::Value* right, char* temp_name, llvm::IRBuilder<> builder)
     {
-        LLVMTypeKind typekind = LLVMGetTypeKind(LLVMTypeOf(left));
-        if(typekind == LLVMIntegerTypeKind)
+        llvm::Type::TypeID typekind = left->getType()->getTypeID();
+        if(typekind == llvm::Type::TypeID::IntegerTyID)
         {
             return generate_binary_operation_with_int(op, left, right, temp_name, builder);
         }
-        else if(typekind == LLVMDoubleTypeKind)
+        else if(typekind == llvm::Type::TypeID::DoubleTyID)
         {
             return generate_binary_operation_with_double(op, left, right, temp_name, builder);
         }
@@ -510,8 +604,21 @@ namespace Codegen
             printf("Unknown type: %d\n", typekind);
             return NULL;
         }
+        // if(typekind == LLVMIntegerTypeKind)
+        // {
+        //     return generate_binary_operation_with_int(op, left, right, temp_name, builder);
+        // }
+        // else if(typekind == LLVMDoubleTypeKind)
+        // {
+        //     return generate_binary_operation_with_double(op, left, right, temp_name, builder);
+        // }
+        // else
+        // {
+        //     printf("Unknown type: %d\n", typekind);
+        //     return NULL;
+        // }
     }
-    LLVMValueRef generate_binary_expression(AST *ast, InternalInfo *info)
+    llvm::Value* generate_binary_expression(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder)
     {
         if(ast == NULL) return NULL;
         if(!isValidInfo(info)) return NULL;
@@ -519,13 +626,13 @@ namespace Codegen
         if(ast->data.TUPLE.left == NULL){printf("Left is NULL\n");return NULL;}
         if(ast->data.TUPLE.right == NULL){printf("Right is NULL\n");return NULL;}
         char *op = ast->data.TUPLE.op;
-        LLVMValueRef left = generate_expression(ast->data.TUPLE.left, info);
-        LLVMValueRef right = generate_expression(ast->data.TUPLE.right, info);
+        llvm::Value* left = generate_expression(ast->data.TUPLE.left, info, builder);
+        llvm::Value* right = generate_expression(ast->data.TUPLE.right, info, builder);
         if(left == NULL){printf("Left is NULL\n");return NULL;}
         if(right == NULL){printf("Right is NULL\n");return NULL;}
         char* temp_name = (char*) calloc(1, sizeof(char*));
         sprintf(temp_name, "_%ld", info->temp_count++);
-        LLVMValueRef value = generate_binary_operation_with_string(op, left, right, temp_name, info->builder);
+        llvm::Value* value = generate_binary_operation_with_string(op, left, right, temp_name, builder);
         free(temp_name);
         return value;
     }
