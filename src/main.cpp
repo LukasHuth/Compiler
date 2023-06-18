@@ -15,6 +15,7 @@ int main()
     syntatic_analysis(ast);
     // ast->print();
     Codegen::init(ast);
+    // std::cout << "Codegen done" << std::endl;
     Lexer::Free(lexer);
     fclose(file);
     return 0;

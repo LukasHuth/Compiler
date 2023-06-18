@@ -9,10 +9,10 @@ namespace Codegen
     struct INTERNAL_INFO
     {
         size_t temp_count;
-        LLVMBuilderRef builder;
+        llvm::AttrBuilder builder;
         LLVMValueRef function;
         LLVMValueRef* variables;
-        LLVMModuleRef module;
+        llvm::Module* module;
         size_t variable_count;
     };
 
@@ -20,7 +20,6 @@ namespace Codegen
     {
         return (
             info != NULL &&
-            info->builder != NULL &&
             info->variables != NULL &&
             info->function != NULL &&
             info->module != NULL
@@ -34,51 +33,81 @@ namespace Codegen
     void generate_variable_declaration(AST *ast, InternalInfo *info);
     void generate_variable_assignment(AST *ast, InternalInfo *info);
     LLVMValueRef generate_function_call(AST *ast, InternalInfo *info);
-    void generate_function(AST *ast, LLVMModuleRef module, LLVMBuilderRef builder);
+    void generate_function(AST *ast, llvm::Module* module, llvm::AttrBuilder builder, llvm::LLVMContext* context);
 
-    void codegen_generate(Codegen *codegen, LLVMModuleRef module, LLVMBuilderRef builder);
-
-    void Free(Codegen *codegen);
+    void codegen_generate(Codegen *codegen, llvm::Module* module, llvm::AttrBuilder builder);
 
     void init(AST *ast)
     {
-        LLVMInitializeCore(LLVMGetGlobalPassRegistry());
-        LLVMInitializeNativeTarget();
-        LLVMInitializeNativeAsmPrinter();
-        LLVMInitializeNativeAsmParser();
+        // auto test = llvm::registerPass();
+        llvm::PassRegistry &Registry = *llvm::PassRegistry::getPassRegistry();
+        llvm::initializeCore(Registry);
+        // LLVMInitializeCore(LLVMGetGlobalPassRegistry());
+        llvm::InitializeNativeTarget();
+        // LLVMInitializeNativeTarget();
+        llvm::InitializeNativeTargetAsmPrinter();
+        // LLVMInitializeNativeAsmPrinter();
+        llvm::InitializeNativeTargetAsmParser();
+        // LLVMInitializeNativeAsmParser();
 
-        LLVMModuleRef module = LLVMModuleCreateWithName("new_module");
-        char* target = LLVMGetDefaultTargetTriple();
-        LLVMSetTarget(module, target); // saet target triple to x86_64-pc-linux-gnu
-        free(target);
-        LLVMBuilderRef builder = LLVMCreateBuilder();
+        // LLVMModuleRef module = LLVMModuleCreateWithName("new_module");
+        llvm::LLVMContext* context = new llvm::LLVMContext();
+        llvm::Module *module = new llvm::Module("new_module", *context);
+        // module_test = module_test; // DEBUG
+        // auto module 
+        // char* target = LLVMGetDefaultTargetTriple();
+        llvm::InitializeAllTargetInfos();
+        // LLVMSetTarget(module, target); // saet target triple to x86_64-pc-linux-gnu
+        // free(target);
+        // auto builder = llvm::createBuilder();
+
+        llvm::AttrBuilder builder = llvm::AttrBuilder();
+
+        // LLVMBuilderRef builder = LLVMCreateBuilder(); // can be removed
+
+        // llvm::Type *int_type = llvm::Type::getInt32Ty(*context);
 
         LLVMTypeRef printf_args[] = {LLVMPointerType(LLVMInt8Type(), 0)};
 
-        LLVMAddFunction(module, "puts", LLVMFunctionType(LLVMInt32Type(), printf_args, 1, 0));
+        llvm::Type *printf_args_type[] = {llvm::PointerType::get(llvm::IntegerType::get(*context, 8), 0)};
+
+        llvm::ArrayRef<llvm::Type*> printf_args_type_ref(printf_args_type);
+
+        // llvm::addFunctionAttr(printf_args_type[0], llvm::Attribute::NoCapture);
+
+        llvm::FunctionType* printf_type = llvm::FunctionType::get(llvm::IntegerType::get(*context, 32), printf_args_type_ref, false);
+
+        // module->functions().add(llvm::Function::Create(llvm::FunctionType::get(llvm::IntegerType::get(*context, 32), printf_args_type, false), llvm::Function::ExternalLinkage, "puts", module));
+
+        llvm::Function::Create(printf_type, llvm::Function::ExternalLinkage, "puts", module);
+
+        // LLVMAddFunction(module, "puts", LLVMFunctionType(LLVMInt32Type(), printf_args, 1, 0));
         
-        Codegen *codegen = (Codegen*) malloc(sizeof(Codegen));
-        codegen->ast = ast;
+        // Codegen *codegen = (Codegen*) malloc(sizeof(Codegen));
+        Codegen *codegen = new Codegen(ast);
 
-        codegen_generate(codegen, module, builder);
+        codegen_generate(codegen, module, builder, context);
 
-        LLVMWriteBitcodeToFile(module, "main.bc");
-        if(DEBUG) LLVMPrintModuleToFile(module, "main.ll", NULL);
-        Free(codegen);
-        LLVMDisposeBuilder(builder);
-        LLVMDisposeModule(module);
+        // LLVMWriteBitcodeToFile(module, "main.bc");
+        // llvm::WriteBitcodeToFile(*module, "main.bc");
+        llvm::verifyModule(*module);
+        llvm::StringRef filename("main.ll");
+        std::error_code error_code;
+        llvm::raw_fd_ostream out(filename, error_code);
+        llvm::WriteBitcodeToFile(*module, out);
+        // if(DEBUG) LLVMPrintModuleToFile(module, "main.ll", NULL);
+        // Free(codegen);
+        delete codegen;
+        // LLVMDisposeBuilder(builder);
+        // LLVMDisposeModule(module);
+        // llvm::disposeM
+        // llvm::DisposeBuilder(builder);
     }
-    void Free(Codegen *codegen)
-    {
-        delete codegen->ast;
-        free(codegen);
-    }
-    void codegen_generate(Codegen *codegen, LLVMModuleRef module, LLVMBuilderRef builder)
+    void codegen_generate(Codegen *codegen, llvm::Module* module, llvm::AttrBuilder builder, llvm::LLVMContext* context)
     {
         if(codegen == NULL){printf("Codegen is NULL\n");return;}
         if(codegen->ast == NULL){printf("AST is NULL\n");return;}
         if(module == NULL){printf("Module is NULL\n");return;}
-        if(builder == NULL){printf("Builder is NULL\n");return;}
         AST *ast = codegen->ast;
         for(size_t i = 0; i < ast->children.size(); i++)
         {
@@ -86,7 +115,7 @@ namespace Codegen
             switch (child->tag)
             {
             case Ast::FUNCTION:
-                generate_function(child, /*file, */module, builder);
+                generate_function(child, /*file, */module, builder, context);
                 break;
             default:
                 printf("Unknown tag: %d\n", child->tag);
@@ -120,29 +149,41 @@ namespace Codegen
             return NULL;
         }
     }
-    void generate_function(AST *ast, LLVMModuleRef module, LLVMBuilderRef builder)
+    void generate_function(AST *ast, llvm::Module* module, llvm::AttrBuilder builder, llvm::LLVMContext* context)
     {
         if(ast == NULL){printf("AST is NULL\n");return;}
         if(module == NULL){printf("Module is NULL\n");return;}
-        if(builder == NULL){printf("Builder is NULL\n");return;}
         char* function_name = ast->data.FUNCTION.name;
         unsigned int param_count = ast->arguments.size();
-        LLVMTypeRef *param_types = (LLVMTypeRef*) malloc(sizeof(LLVMTypeRef) * param_count);
-        for(unsigned int i = 0; i < param_count; i++)
+        // LLVMTypeRef *param_types = (LLVMTypeRef*) malloc(sizeof(LLVMTypeRef) * param_count);
+        std::vector<llvm::Type*> param_types;
+        for(AST* child : ast->arguments)
         {
-            AST *child = ast->arguments[i];
             AST *type = child->data.VAR_MANIP.ast;
-            LLVMTypeRef type_ref = get_type(type);
+            // LLVMTypeRef type_ref = get_type(type);
+            llvm::Type *type_ref = llvm::IntegerType::get(*context, 32); // TODO: change to get_type and change get_type to return llvm::Type*
             if(type_ref == NULL){printf("Type is NULL\n");return;}
-            param_types[i] = type_ref;
+            param_types.push_back(type_ref);
         }
-        LLVMTypeRef function_type = LLVMFunctionType(LLVMInt32Type(), param_types, param_count, false);
-        free(param_types);
-        LLVMValueRef function = LLVMAddFunction(module, function_name, function_type);
-        LLVMSetLinkage(function, LLVMExternalLinkage);
-        LLVMSetFunctionCallConv(function, LLVMCCallConv);
-        LLVMBasicBlockRef entry = LLVMAppendBasicBlock(function, "entry");
-        LLVMPositionBuilderAtEnd(builder, entry);
+        // {
+        //     AST *child = ast->arguments[i];
+        //     AST *type = child->data.VAR_MANIP.ast;
+        //     LLVMTypeRef type_ref = get_type(type);
+        //     if(type_ref == NULL){printf("Type is NULL\n");return;}
+        //     param_types[i] = type_ref;
+        // }
+        // LLVMTypeRef function_type = LLVMFunctionType(LLVMInt32Type(), param_types, param_count, false);
+        // free(param_types);
+        llvm::FunctionType* function_type = llvm::FunctionType::get(llvm::IntegerType::get(*context, 32), param_types, false); // TODO: change to adjust to function specific type
+        // LLVMValueRef function = LLVMAddFunction(module, function_name, function_type);
+        // llvm::Function::Create(function_type, llvm::GlobalValue::LinkageTypes::, function_name, module);
+        module->getOrInsertFunction(function_name, function_type); // HELP: https://releases.llvm.org/2.6/docs/tutorial/JITTutorial1.html
+        // llvm::Function* function = llvm::Function::Create(function_type, llvm::Function::ExternalLinkage, function_name, module);
+        // llvm::Function::Create(llvm::FunctionType::get(llvm::IntegerType::get(*context, 32), printf_args_type_ref, false), llvm::Function::ExternalLinkage, "puts", module);
+        // LLVMSetLinkage(function, LLVMExternalLinkage);
+        // LLVMSetFunctionCallConv(function, LLVMCCallConv);
+        // LLVMBasicBlockRef entry = LLVMAppendBasicBlock(function, "entry");
+        // LLVMPositionBuilderAtEnd(builder, entry);
         InternalInfo *info = (InternalInfo*) malloc(sizeof(InternalInfo));
         info->builder = builder;
         info->temp_count = 0;
@@ -405,7 +446,7 @@ namespace Codegen
         free(temp_name);
         return value;
     }
-    LLVMValueRef generate_binary_operation_with_int(char* op, LLVMValueRef left, LLVMValueRef right, char* temp_name, LLVMBuilderRef builder)
+    LLVMValueRef generate_binary_operation_with_int(char* op, LLVMValueRef left, LLVMValueRef right, char* temp_name, llvm::AttrBuilder builder)
     {
         if (strcmp(op, "+") == 0)
         {
@@ -429,7 +470,7 @@ namespace Codegen
             return NULL;
         }
     }
-    LLVMValueRef generate_binary_operation_with_double(char* op, LLVMValueRef left, LLVMValueRef right, char* temp_name, LLVMBuilderRef builder)
+    LLVMValueRef generate_binary_operation_with_double(char* op, LLVMValueRef left, LLVMValueRef right, char* temp_name, llvm::AttrBuilder builder)
     {
         if (strcmp(op, "+") == 0)
         {
@@ -453,7 +494,7 @@ namespace Codegen
             return NULL;
         }
     }
-    LLVMValueRef generate_binary_operation_with_string(char* op, LLVMValueRef left, LLVMValueRef right, char* temp_name, LLVMBuilderRef builder)
+    LLVMValueRef generate_binary_operation_with_string(char* op, LLVMValueRef left, LLVMValueRef right, char* temp_name, llvm::AttrBuilder builder)
     {
         LLVMTypeKind typekind = LLVMGetTypeKind(LLVMTypeOf(left));
         if(typekind == LLVMIntegerTypeKind)
