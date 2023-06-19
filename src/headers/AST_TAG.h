@@ -4,7 +4,8 @@
 #include <string>
 namespace Ast
 {
-  typedef enum {
+  typedef enum
+  {
     LITERAL,
     BINARY_OP,
     UNARY_OP,

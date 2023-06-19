@@ -5,13 +5,14 @@
 
 #include "AST.h"
 
-typedef struct {
-    int whilecount;
-    int forcount;
-    bool in_function;
-    int ifcount;
-    bool in_else;
-    bool returned;
+typedef struct
+{
+  int whilecount;
+  int forcount;
+  bool in_function;
+  int ifcount;
+  bool in_else;
+  bool returned;
 } SYNTATIC_ANALYSIS_STATE;
 
 #include "symbol_table.h"

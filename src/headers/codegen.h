@@ -22,20 +22,20 @@
 
 namespace Codegen
 {
-    // typedef struct
-    // {
-    //     FILE *file;
-    //     AST *ast;
-    // } Codegen;
-    class Codegen
-    {
-        public:
-            AST *ast;
-            Codegen(AST *ast) { this->ast = ast; }
-            ~Codegen() {delete this->ast;}
-    };
+  // typedef struct
+  // {
+  //     FILE *file;
+  //     AST *ast;
+  // } Codegen;
+  class Codegen
+  {
+  public:
+    AST *ast;
+    Codegen(AST *ast) { this->ast = ast; }
+    ~Codegen() { delete this->ast; }
+  };
 
-    void init(AST *ast);
+  void init(AST *ast);
 }
 
 #endif

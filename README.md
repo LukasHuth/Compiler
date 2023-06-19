@@ -8,10 +8,16 @@
 Every file found in src/headers/llvm and src/headers/llvm-c is from the official llvm project and not from me.
 ```
 
-## compilation of .ll file
+## compilation of .bc file
 
 ```
-llc -filetype=obj output.ll -o output.o
+clang main.bc -o output
+```
+
+## if the compilation of .ll file is needed for debug reasons
+
+```
+llc -filetype=obj main.ll -o output.o
 clang output.o -o output
 ```
 

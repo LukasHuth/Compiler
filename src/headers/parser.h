@@ -5,6 +5,6 @@
 #include "AST.h"
 namespace Parser
 {
-    AST* parse(Lexer::Lexer* lexer);
+  AST *parse(Lexer::Lexer *lexer);
 }
 #endif
