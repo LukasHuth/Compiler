@@ -30,8 +30,14 @@ namespace Codegen
     llvm::Value* generate_expression(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder);
     void generate_return(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder);
     void generate_variable_declaration(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder);
-    void generate_variable_assignment(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder);
+    llvm::Value* generate_variable_assignment(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder);
+    llvm::Value* generate_increment(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder);
+    llvm::Value* generate_decrement(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder);
+    llvm::Value* generate_multiply_assign(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder);
+    llvm::Value* generate_divide_assign(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder);
     llvm::Value* generate_function_call(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder);
+    llvm::BasicBlock* generate_for(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder);
+    void generate_if(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder);
     void generate_function(AST *ast, llvm::Module* module, llvm::IRBuilder<> builder, llvm::LLVMContext* context);
 
     void codegen_generate(Codegen *codegen, llvm::Module* module, llvm::IRBuilder<> builder, llvm::LLVMContext* context);
@@ -57,6 +63,7 @@ namespace Codegen
         llvm::LLVMContext* context = new llvm::LLVMContext();
         llvm::Module *module = new llvm::Module("new_module", *context);
         module->setTargetTriple("x86_64-pc-linux-gnu");
+        // module->setTargetTriple("x86_64-pc-win32");
         // module_test = module_test; // DEBUG
         // auto module 
         // char* target = LLVMGetDefaultTargetTriple();
@@ -155,7 +162,7 @@ namespace Codegen
         OS.flush();
         // */
 
-    //    module->print(out, nullptr); // used to print module to file in human readable format
+      //  module->print(out, nullptr); // used to print module to file in human readable format
 
 
         // std::cout << module->getValueSymbolTable() << std::endl;
@@ -283,6 +290,49 @@ namespace Codegen
         // free(info->variables);
         free(info);
     }
+    llvm::BasicBlock* generate_body_content(AST* child, InternalInfo* info, llvm::IRBuilder<> builder)
+    {
+      llvm::BasicBlock* block = NULL;
+      switch (child->tag)
+      {
+      case Ast::RETURN:
+            generate_return(child, info, builder);
+            break;
+      case Ast::DECLARATION:
+            generate_variable_declaration(child, info, builder);
+            break;
+      case Ast::ASSIGN:
+            generate_variable_assignment(child, info, builder);
+            break;
+      case Ast::CALL:
+            printf("Call begin\n");
+            generate_function_call(child, info, builder);
+            printf("Call end\n");
+            break;
+      case Ast::INCREMENT:
+            generate_increment(child, info, builder);
+            break;
+      case Ast::DECREMENT:
+            generate_decrement(child, info, builder);
+            break;
+      case Ast::MULTIPLY_ASSIGN:
+            generate_multiply_assign(child, info, builder);
+            break;
+      case Ast::DIVIDE_ASSIGN:
+            generate_divide_assign(child, info, builder);
+            break;
+      case Ast::FOR:
+            block = generate_for(child, info, builder);
+            break;
+      case Ast::IF:
+            generate_if(child, info, builder);
+            break;
+      default:
+            printf("Unknown tag: %s\n", Ast::get_tag_name(child->tag).c_str());
+            break;
+      }
+      return block;
+    }
     void generate_function_body(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder)
     {
         std::cout << "generate_function_body start" << std::endl;
@@ -300,25 +350,10 @@ namespace Codegen
         for(size_t i = 0; i < ast->children.size(); i++)
         {
             AST *child = ast->children[i];
-            switch (child->tag)
+            llvm::BasicBlock* block = generate_body_content(child, info, builder);
+            if(block != NULL)
             {
-            case Ast::RETURN:
-                generate_return(child, info, builder);
-                break;
-            case Ast::DECLARATION:
-                generate_variable_declaration(child, info, builder);
-                break;
-            case Ast::ASSIGN:
-                generate_variable_assignment(child, info, builder);
-                break;
-            case Ast::CALL:
-                printf("Call begin\n");
-                generate_function_call(child, info, builder);
-                printf("Call end\n");
-                break;
-            default:
-                printf("Unknown tag: %d\n", child->tag);
-                break;
+                builder.SetInsertPoint(block);
             }
         }
         std::cout << "generate_function_body end" << std::endl;
@@ -326,15 +361,15 @@ namespace Codegen
     llvm::Value* get_number_type(AST *ast, llvm::LLVMContext* context)
     {
         if(ast == NULL) return NULL;
-        char* number = ast->data.NUMBER.number;
+        char* literal = ast->data.LITERAL.literal;
         float f;
-        (void)sscanf(number, "%f", &f);
+        (void)sscanf(literal, "%f", &f);
         // LLVMValueRef value = NULL;
         llvm::Value* value = NULL;
         bool is_float = false;
-        for(size_t i = 0; i < strlen(number); i++)
+        for(size_t i = 0; i < strlen(literal); i++)
         {
-            if(number[i] == '.')
+            if(literal[i] == '.')
             {
                 is_float = true;
                 break;
@@ -343,14 +378,14 @@ namespace Codegen
 
         if(is_float)
         {
-            printf("----------\nnumber: %f\n", atof(number));
-            // value = LLVMConstReal(LLVMDoubleType(), atof(number));
-            value = llvm::ConstantFP::get(*context, llvm::APFloat(atof(number)));
+            printf("----------\nnumber: %f\n", atof(literal));
+            // value = LLVMConstReal(LLVMDoubleType(), atof(literal));
+            value = llvm::ConstantFP::get(*context, llvm::APFloat(atof(literal)));
             return value;
         } else {
-            printf("number: %s\n", number);
-            // value = LLVMConstInt(LLVMInt32Type(), atoi(number), 0);
-            value = llvm::ConstantInt::get(*context, llvm::APInt(32, atoi(number), true));
+            printf("literal: %s\n", literal);
+            // value = LLVMConstInt(LLVMInt32Type(), atoi(literal), 0);
+            value = llvm::ConstantInt::get(*context, llvm::APInt(32, atoi(literal), true));
         }
         return value;
     }
@@ -386,7 +421,7 @@ namespace Codegen
         char *function_name = ast->data.CALL.name;
         if(strcmp(function_name, "print") == 0)
         {
-            if(ast->arguments.size() != 1){printf("Wrong number of arguments for print\n");return NULL;} // could break
+            if(ast->arguments.size() != 1){printf("Wrong literal of arguments for print\n");return NULL;} // could break
             AST *argument = ast->arguments[0];
             // LLVMValueRef value = generate_expression(argument, info);
             llvm::Value* value = generate_expression(argument, info, builder);
@@ -475,16 +510,16 @@ namespace Codegen
         std::cout << "generate_function_call end" << std::endl;
         return result;
     }
-    void generate_variable_assignment(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder)
+    llvm::Value* generate_variable_assignment(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder)
     {
         std::cout << "Generating variable assignment" << std::endl;
-        if(ast == NULL){printf("AST is NULL\n");return;}
-        if(!isValidInfo(info)){printf("Info is invalid(variable assignment)\n");return;}
-        if(ast->tag != Ast::ASSIGN){printf("AST is not an assignment\n");return;}
+        if(ast == NULL){printf("AST is NULL\n");return NULL;}
+        if(!isValidInfo(info)){printf("Info is invalid(variable assignment)\n");return NULL;}
+        if(ast->tag != Ast::ASSIGN){printf("AST is not an assignment\n");return NULL;}
         char* name = ast->data.VAR_MANIP.name;
         AST *expr = ast->data.VAR_MANIP.ast;
         llvm::Value* value = generate_expression(expr, info, builder);
-        if(value == NULL) return;
+        if(value == NULL) return NULL;
         // LLVMValueRef variable = NULL;
         // llvm::Value* variable = NULL;
         // for(size_t i = 0; i < info->variable_count; i++)
@@ -521,7 +556,7 @@ namespace Codegen
                 std::cout << "Found variable!!!" << std::endl;
                 if(variable == NULL) std::cout << "Variable is NULL" << std::endl;
                 builder.CreateStore(value, variable);
-                return;
+                return value;
             }
         }
         std::cout << "Variable not found, creating new variable" << std::endl;
@@ -535,6 +570,7 @@ namespace Codegen
             // llvm::Value* var = builder.CreateAlloca(type, 0, name);
         // builder.CreateStore(value, variable);
         std::cout << "Finished generating variable assignment" << std::endl;
+        return value;
     }
     void generate_variable_declaration(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder)
     {
@@ -598,7 +634,7 @@ namespace Codegen
         llvm::Value* value = NULL;
         switch (ast->tag)
         {
-            case Ast::NUMBER:
+            case Ast::LITERAL:
                 value = get_number_type(ast, info->context);
                 break;
             case Ast::VARIABLE:
@@ -638,22 +674,39 @@ namespace Codegen
             case Ast::CALL:
                 value = generate_function_call(ast, info, builder);
                 break;
+            case Ast::INCREMENT:
+                value = generate_increment(ast, info, builder);
+                break;
+            case Ast::DECREMENT:
+                value = generate_decrement(ast, info, builder);
+                break;
+            case Ast::MULTIPLY_ASSIGN:
+                value = generate_multiply_assign(ast, info, builder);
+                break;
+            case Ast::DIVIDE_ASSIGN:
+                value = generate_divide_assign(ast, info, builder);
+                break;
+            case Ast::NOOP:
+                value = NULL;
+                break;
+            case Ast::ASSIGN:
+                value = generate_variable_assignment(ast, info, builder);
+                break;
+            case Ast::FOR:
             case Ast::EXPR:
             case Ast::RETURN:
             case Ast::ARGUMENT:
             case Ast::DECLARATION:
             case Ast::IF:
             case Ast::WHILE:
-            case Ast::FOR:
             case Ast::BREAK:
             case Ast::CONTINUE:
             case Ast::TYPE:
             case Ast::FUNCTION:
             case Ast::IMPORT:
             case Ast::NODE:
-            case Ast::NOOP:
-            case Ast::ASSIGN:
-                printf("Unknown tag: %d\n", ast->tag);
+            case Ast::UNARY_OP:
+                printf("Unknown tag: %s\n", Ast::get_tag_name(ast->tag).c_str());
                 exit(5);
                 break;
         }
@@ -683,6 +736,34 @@ namespace Codegen
             // return LLVMBuildSDiv(builder, left, right, temp_name);
             return builder.CreateSDiv(left, right, temp_name);
         }
+        else if (strcmp(op, "==") == 0)
+        {
+          return builder.CreateICmpEQ(left, right, temp_name);
+        }
+        else if (strcmp(op, "<") == 0)
+        {
+          return builder.CreateICmpULT(left, right, temp_name);
+        }
+        else if (strcmp(op, ">") == 0)
+        {
+          return builder.CreateICmpUGT(left, right, temp_name);
+        }
+        else if (strcmp(op, "<=") == 0)
+        {
+          return builder.CreateICmpULE(left, right, temp_name);
+        }
+        else if (strcmp(op, ">=") == 0)
+        {
+          return builder.CreateICmpUGE(left, right, temp_name);
+        }
+        else if (strcmp(op, "!=") == 0)
+        {
+          return builder.CreateICmpNE(left, right, temp_name);
+        }
+        else if (strcmp(op, "&&") == 0)
+        {
+          return builder.CreateAnd(left, right, temp_name);
+        }
         else
         {
             printf("Unknown operator: %s\n", op);
@@ -710,6 +791,34 @@ namespace Codegen
         {
             // return LLVMBuildFDiv(builder, left, right, temp_name);
             return builder.CreateFDiv(left, right, temp_name);
+        }
+        else if (strcmp(op, "==") == 0)
+        {
+          return builder.CreateFCmpOEQ(left, right, temp_name);
+        }
+        else if (strcmp(op, "!=") == 0)
+        {
+          return builder.CreateFCmpONE(left, right, temp_name);
+        }
+        else if (strcmp(op, "<") == 0)
+        {
+          return builder.CreateFCmpOLT(left, right, temp_name);
+        }
+        else if (strcmp(op, ">") == 0)
+        {
+          return builder.CreateFCmpOGT(left, right, temp_name);
+        }
+        else if (strcmp(op, "<=") == 0)
+        {
+          return builder.CreateFCmpOLE(left, right, temp_name);
+        }
+        else if (strcmp(op, ">=") == 0)
+        {
+          return builder.CreateFCmpOGE(left, right, temp_name);
+        }
+        else if (strcmp(op, "&&") == 0)
+        {
+          return builder.CreateAnd(left, right, temp_name);
         }
         else
         {
@@ -753,16 +862,78 @@ namespace Codegen
         if(!isValidInfo(info)) return NULL;
         if(ast->data.TUPLE.op == NULL){printf("Operator is NULL\n");return NULL;}
         if(ast->data.TUPLE.left == NULL){printf("Left is NULL\n");return NULL;}
-        if(ast->data.TUPLE.right == NULL){printf("Right is NULL\n");return NULL;}
+        if(ast->data.TUPLE.right == NULL){ast->data.TUPLE.left->print();printf("Right is NULL\n");return NULL;}
         char *op = ast->data.TUPLE.op;
         llvm::Value* left = generate_expression(ast->data.TUPLE.left, info, builder);
+        // ast->data.TUPLE.right->print();
         llvm::Value* right = generate_expression(ast->data.TUPLE.right, info, builder);
         if(left == NULL){printf("Left is NULL\n");return NULL;}
-        if(right == NULL){printf("Right is NULL\n");return NULL;}
+        if(right == NULL){printf("Right is NULL (0)\n");return NULL;}
         char* temp_name = (char*) calloc(1, sizeof(char*));
         sprintf(temp_name, "_%ld", info->temp_count++);
         llvm::Value* value = generate_binary_operation_with_string(op, left, right, temp_name, builder);
         free(temp_name);
         return value;
     }
+    llvm::Value *generate_increment(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder)
+    {
+        if (ast == NULL)
+            return NULL;
+        if (!isValidInfo(info))
+            return NULL;
+        if (ast->data.VAR_MANIP.ast == NULL)
+        {
+            printf("Right is NULL\n");
+            return NULL;
+        }
+        llvm::Value *expr = generate_expression(ast->data.VAR_MANIP.ast, info, builder);
+        std::cout << "Incrementing variable: " << ast->data.VAR_MANIP.name << std::endl;
+        for (llvm::Value *variable : info->variable_values)
+        {
+            std::cout << "Variable: " << variable->getName().str() << " ast name: " << ast->data.VAR_MANIP.name << std::endl;
+            if (variable->getName() == ast->data.VAR_MANIP.name)
+            {
+                    std::cout << "Found variable: " << variable->getName().str() << std::endl;
+                    llvm::Value *value = builder.CreateLoad(variable);
+                    value = builder.CreateAdd(value, expr);
+                    builder.CreateStore(value, variable);
+                    return value;
+            }
+        }
+        return expr;
+    }
+    llvm::BasicBlock* generate_for(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder)
+    {
+      generate_expression(ast->data.FOR.init, info, builder);
+      // generate_body_content(child, info, builder);
+      llvm::BasicBlock *loop = llvm::BasicBlock::Create(*info->context, "loop", info->function);
+      // AST* condition = ast->data.FOR.condition;
+      // std::cout << "Condition: " << std::endl;
+      // condition->print();
+      builder.CreateBr(loop);
+      builder.SetInsertPoint(loop);
+      AST* body = ast->data.FOR.body;
+      std::vector<AST*> body_children = body->children;
+      for(AST* child : body_children)
+      {
+        generate_body_content(child, info, builder);
+      }
+      // end loop
+      generate_body_content(ast->data.FOR.increment, info, builder);
+      llvm::Value* test = generate_expression(ast->data.FOR.condition, info, builder);
+      llvm::BasicBlock *after = llvm::BasicBlock::Create(*info->context, "afterloop", info->function);
+      builder.CreateCondBr(test, loop, after);
+      builder.SetInsertPoint(after);
+      return after;
+      // builder.SetInsertPoint(loop);
+      // llvm::ReturnInst::Create(*info->context, builder.CreateLoad(info->variable_values[0]), after);
+    }
+    // TODO: Implement
+    llvm::Value* generate_decrement(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder){return NULL;}
+    // TODO: Implement
+    llvm::Value* generate_multiply_assign(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder){return NULL;}
+    // TODO: Implement
+    llvm::Value* generate_divide_assign(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder){return NULL;}
+    // TODO: Implement
+    void generate_if(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder){return;}
 }

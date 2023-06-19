@@ -5,8 +5,13 @@
 namespace Ast
 {
   typedef enum {
-    NUMBER,
+    LITERAL,
     BINARY_OP,
+    UNARY_OP,
+    INCREMENT,
+    DECREMENT,
+    MULTIPLY_ASSIGN,
+    DIVIDE_ASSIGN,
     EXPR,
     RETURN,
     ARGUMENT,

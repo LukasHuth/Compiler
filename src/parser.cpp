@@ -59,7 +59,9 @@ namespace Parser
             arguments.push_back(argument);
             if (peek(lexer) == Lexer::COMMA)
             {
+                std::cout << "comma parse_func begin" << std::endl;
                 eat(lexer, Lexer::COMMA);
+                std::cout << "comma parse_func end" << std::endl;
             }
         }
         eat(lexer, Lexer::CLOSE_PAREN);
@@ -115,6 +117,32 @@ namespace Parser
             {
                 printf("Parser(parse_expr): Error: Index assignment not implemented\n");
                 exit(2);
+            }
+            if(peek(lexer) == Lexer::PLUS || peek(lexer) == Lexer::MINUS || peek(lexer) == Lexer::STAR || peek(lexer) == Lexer::SLASH)
+            {
+                Lexer::Token *token = eat(lexer, peek(lexer));
+                Ast::Tag tag = token->tag == Lexer::PLUS ? Ast::INCREMENT : token->tag == Lexer::MINUS ? Ast::DECREMENT
+                                : token->tag == Lexer::STAR ? Ast::MULTIPLY_ASSIGN : Ast::DIVIDE_ASSIGN;
+                std::cout << "parse_expr: " << Lexer::Tag_to_string(peek(lexer)) << std::endl;
+                if(peek(lexer) == Lexer::EQUALS)
+                {
+                    std::cout << "parse_expr: " << Lexer::Tag_to_string(peek(lexer)) << std::endl;
+                    eat(lexer, Lexer::EQUALS);
+                    std::cout << "parse_expr: " << Lexer::Tag_to_string(peek(lexer)) << std::endl;
+                    AST* expr = parse_term(lexer, function);
+                    expr->print();
+                    return new AST(tag, name, expr);
+                }
+                if((peek(lexer) == Lexer::PLUS || peek(lexer) == Lexer::MINUS) && (token->tag == Lexer::PLUS || token->tag == Lexer::MINUS))
+                {
+                    if(eat(lexer, peek(lexer))->tag == token->tag)
+                    {
+                        char* val = (char*) calloc(1, sizeof(char));
+                        val[0] = '1';
+                        return new AST(tag, name, new AST(Ast::LITERAL, val));
+                    }
+                    std::cout << "Parser(parse_expr): Error: Expected " << Lexer::Tag_to_string(token->tag) << ", got " << Lexer::Tag_to_string(peek(lexer)) << std::endl;
+                }
             }
             // TODO: Implement index assignment and add support for -=, +=, *=, /=, etc.
             printf("Parser(parse_expr): Error: Unexpected token %s\n", Lexer::Tag_to_string(peek(lexer)).c_str());
@@ -212,18 +240,25 @@ namespace Parser
     {
         lexer->index = lexer->index;
         function->tag = function->tag;
-        printf("Parser(parse_for): Error: For not implemented\n");
-        exit(2);
-        /*
+        // printf("Parser(parse_for): Error: For not implemented\n");
+        // exit(2);
+        // /*
         eat(lexer, Lexer::OPEN_PAREN);
-        AST* init = parse_expr(lexer);
-        AST* condition = parse_term(lexer);
+        AST* init = parse_expr(lexer, function);
         eat(lexer, Lexer::SEMICOLON);
-        AST* update = parse_expr(lexer);
+        AST* condition = parse_term(lexer, function);
+        eat(lexer, Lexer::SEMICOLON);
+        std::cout << Lexer::Tag_to_string(peek(lexer)) << std::endl;
+        AST* update = parse_expr(lexer, function);
+        std::cout << std::endl << "condition" << std::endl;
+        condition->print();
+        std::cout << std::endl << "update" << std::endl;
+        update->print();
+        std::cout << std::endl;
         eat(lexer, Lexer::CLOSE_PAREN);
-        AST* body = parse_body(lexer);
-        return AST_new_for(init, condition, update, body);
-        */
+        AST* body = parse_body(lexer, function);
+        return new AST(init, condition, update, body);
+        // */
     }
 
     AST *parse_while(Lexer::Lexer *lexer, AST* function)
@@ -290,33 +325,39 @@ namespace Parser
 
     bool is_binary_op(Lexer::Tag tag)
     {
-        return tag == Lexer::PLUS || tag == Lexer::MINUS || tag == Lexer::STAR || tag == Lexer::SLASH;
+        return tag == Lexer::PLUS || tag == Lexer::MINUS || tag == Lexer::STAR || tag == Lexer::SLASH || tag == Lexer::EQUALS_EQUALS || tag == Lexer::BANG_EQUALS || tag == Lexer::LESS || tag == Lexer::GREATER || tag == Lexer::LESS_EQUALS || tag == Lexer::GREATER_EQUALS || tag == Lexer::L_AND || tag == Lexer::L_OR;
     }
 
     AST *parse_term(Lexer::Lexer *lexer, AST* function)
     {
         AST *left = parse_factor(lexer, function);
+        std::cout << std::endl << "left" << std::endl;
+        left->print();
         while (is_binary_op(peek(lexer)))
         {
             Lexer::Tag tag = peek(lexer);
             Lexer::Token *token = eat(lexer, tag);
+            std::cout << std::endl << "token: " << token->data << std::endl;
+            AST *right = parse_factor(lexer, function);
+            std::cout << std::endl << "right" << std::endl;
+            right->print();
             if(left->tag == Ast::BINARY_OP)
             {
                 if(left->data.TUPLE.op == token->data)
                 {
-                    AST* right = parse_factor(lexer, function);
+                    // AST* right = parse_factor(lexer, function);
                     left = new AST(Ast::BINARY_OP, left, right, token->data);
                     continue;
                 }
                 if(Ast::tag_get_priority(left->data.TUPLE.op) < Ast::tag_get_priority(token->data))
                 {
-                    AST* right = parse_factor(lexer, function);
+                    // AST* right = parse_factor(lexer, function);
                     AST* new_left = new AST(Ast::BINARY_OP, left->data.TUPLE.left, right, token->data);
                     left->data.TUPLE.left = new_left;
                     continue;
                 }
             }
-            AST *right = parse_factor(lexer, function);
+            // AST *right = parse_factor(lexer, function);
             left = new AST(Ast::BINARY_OP, left, right, token->data);
         }
         return left;
@@ -349,10 +390,11 @@ namespace Parser
     }
     AST *parse_factor(Lexer::Lexer *lexer, AST* function)
     {
-        if (peek(lexer) == Lexer::NUMBER)
+      std::cout << "factor: peek tag: " << Lexer::Tag_to_string(peek(lexer)) << std::endl;
+        if (peek(lexer) == Lexer::LITERAL)
         {
-            char* number = eat(lexer, Lexer::NUMBER)->data;
-            return new AST(Ast::NUMBER, number);
+            char* literal = eat(lexer, Lexer::LITERAL)->data;
+            return new AST(Ast::LITERAL, literal);
         }
         if (peek(lexer) == Lexer::OPEN_PAREN)
         {
@@ -373,8 +415,9 @@ namespace Parser
             if(b_is_arg) position = get_arg_position(function, name);
             return new AST(Ast::VARIABLE, name, b_is_arg, position);
         }
-        printf("Parser(parse_factor): Error: Unexpected token %s\n", Lexer::Tag_to_string(peek(lexer)).c_str());
-        exit(1);
+        return parse_expr(lexer, function);
+        // printf("Parser(parse_factor): Error: Unexpected token %s\n", Lexer::Tag_to_string(peek(lexer)).c_str());
+        // exit(1);
     }
     AST *parse_call(Lexer::Lexer *lexer, char *name, AST* function)
     {
@@ -386,7 +429,9 @@ namespace Parser
             arguments.push_back(argument);
             if (peek(lexer) == Lexer::COMMA)
             {
+                std::cout << "comma parse_call begin" << std::endl;
                 eat(lexer, Lexer::COMMA);
+                std::cout << "comma parse_call end" << std::endl;
             }
         }
         eat(lexer, Lexer::CLOSE_PAREN);

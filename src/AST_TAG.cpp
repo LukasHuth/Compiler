@@ -5,8 +5,8 @@ namespace Ast
     {
         switch (tag)
         {
-        case NUMBER:
-            return "NUMBER";
+        case LITERAL:
+            return "LITERAL";
         case BINARY_OP:
             return "BINARY_OP";
         case EXPR:
@@ -41,6 +41,18 @@ namespace Ast
             return "VARIABLE";
         case NOOP:
             return "NOOP";
+        case IMPORT:
+            return "IMPORT";
+        case UNARY_OP:
+            return "UNARY_OP";
+        case INCREMENT:
+            return "INCREMENT";
+        case DECREMENT:
+            return "DECREMENT";
+        case MULTIPLY_ASSIGN:
+            return "MULTIPLY_ASSIGN";
+        case DIVIDE_ASSIGN:
+            return "DIVIDE_ASSIGN";
         default:
             printf("AST(get_tag_name): Error: Unknown tag\n");
             return "?";
@@ -48,12 +60,14 @@ namespace Ast
     }
     int tag_get_priority(std::string tag)
     {
-        if (tag == "==")
+        if (tag == "||" || tag == "&&")
             return 1;
-        if(tag == "+" || tag == "-")
+        if (tag == "==" || tag == "!=" || tag == "<" || tag == ">" || tag == "<=" || tag == ">=")
             return 2;
-        if(tag == "*" || tag == "/")
+        if(tag == "+" || tag == "-")
             return 3;
+        if(tag == "*" || tag == "/")
+            return 4;
         return -1;
     }
 }

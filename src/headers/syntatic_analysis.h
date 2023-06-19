@@ -1,6 +1,8 @@
 #ifndef H_SYNTATIC_ANALYSIS
 #define H_SYNTATIC_ANALYSIS
 
+#include <iostream>
+
 #include "AST.h"
 
 typedef struct {

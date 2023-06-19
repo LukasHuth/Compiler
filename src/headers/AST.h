@@ -15,7 +15,7 @@ class AST {
     std::vector<AST*> children;
     std::vector<AST*> arguments;
     union data {
-      struct NUMBER { char* number; } NUMBER;
+      struct LITERAL { char* literal; } LITERAL;
       struct TUPLE { AST *left; AST *right; char* op; } TUPLE;
       struct EXPR { AST *expr; } EXPR;
       struct RETURN { AST *expr; } RETURN;

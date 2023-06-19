@@ -25,6 +25,7 @@ clean:
 	rm -f $(out_dir)/*
 	rm -f $(exec)
 	rm -f output output.ll output.o
+	rm -f *.bc *.ll *.o *.s *.out *.exe *.output
 
 .PHONY: clean
 

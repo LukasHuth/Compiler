@@ -16,7 +16,8 @@ void syntatic_analysis(AST *node)
         return;
     if(node->tag != Ast::NODE)
     {
-        printf("ERROR: node is not a NODE\n");
+        // printf("ERROR: node is not a NODE\n");
+        std::cout << "ERROR: node is not a NODE (" << Ast::get_tag_name(node->tag) << ")" << std::endl;
         exit(10); // ERROR CODE 10
     }
     // SYMBOL_TABLE *table = create_symbol_table();
@@ -44,7 +45,8 @@ bool syntatic_analysis_children(AST *ast, Symbol_table *table)
         return false;
     if(ast->tag != Ast::FUNCTION)
     {
-        printf("ERROR: node is not a FUNCTION\n");
+        // printf("ERROR: node is not a FUNCTION\n");
+        std::cout << "ERROR: node is not a FUNCTION (" << Ast::get_tag_name(ast->tag) << ")" << std::endl;
         exit(11); // ERROR CODE 11
     }
     STATE *state = create_state();
@@ -221,6 +223,27 @@ void syntatic_analysis_body(AST *ast, STATE *state, Symbol_table* table)
         return;
     if(ast->tag == Ast::NOOP)
         return;
+    if(ast->tag == Ast::NODE)
+    {
+        for(size_t i = 0; i < ast->children.size(); i++)
+            syntatic_analysis_body(ast->children[i], state, table);
+        return;
+    }
+    if(ast->tag == Ast::TYPE)
+        return;
+    if(ast->tag == Ast::LITERAL)
+        return;
+    if(ast->tag == Ast::INCREMENT)
+        return;
+    if(ast->tag == Ast::DECREMENT)
+        return;
+    if(ast->tag == Ast::MULTIPLY_ASSIGN)
+        return;
+    if(ast->tag == Ast::DIVIDE_ASSIGN)
+        return;
+    
+    // if(ast->tag == Ast::NEGATIVE)
+    //     return;
     printf("ERROR: unknown node tag (%s)\n", get_tag_name(ast->tag).c_str());
     if(ast->tag != Ast::NODE)
     {

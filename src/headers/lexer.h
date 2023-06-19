@@ -7,7 +7,11 @@
 namespace Lexer
 {
     enum Tag {
-        NUMBER,
+        LITERAL,
+        INCREMENT,
+        DECREMENT,
+        MULTIPLY_ASSIGN,
+        DIVIDE_ASSIGN,
         PLUS,
         MINUS,
         STAR,
@@ -27,6 +31,15 @@ namespace Lexer
         CLOSE_BRACE,
         OPEN_BRACKET,
         CLOSE_BRACKET,
+        BANG,
+        BANG_EQUALS,
+        EQUALS_EQUALS,
+        LESS_EQUALS,
+        GREATER_EQUALS,
+        L_AND,
+        L_OR,
+        AND,
+        PIPE,
         EOFI,
     };
     typedef enum Tag Tag;

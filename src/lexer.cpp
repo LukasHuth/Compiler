@@ -42,9 +42,28 @@ namespace Lexer
                 *tag = PLUS;
                 break;
             case '<':
+                if(peek_char(lexer->file) == '=') {
+                    get_char(lexer->file);
+                    str_size++;
+                    str = (char*) realloc(str, str_size * sizeof(char));
+                    str[str_size - 1] = '\0';
+                    str[str_size - 2] = '=';
+                    *tag = LESS_EQUALS;
+                    break;
+                }
                 *tag = LESS;
                 break;
             case '>':
+                if(peek_char(lexer->file) == '=')
+                {
+                    get_char(lexer->file);
+                    str_size++;
+                    str = (char*) realloc(str, str_size * sizeof(char));
+                    str[str_size - 1] = '\0';
+                    str[str_size - 2] = '=';
+                    *tag = GREATER_EQUALS;
+                    break;
+                }
                 *tag = GREATER;
                 break;
             case '-':
@@ -82,6 +101,15 @@ namespace Lexer
                 *tag = SEMICOLON;
                 break;
             case '=':
+                if(peek_char(lexer->file) == '=') {
+                    get_char(lexer->file);
+                    str_size++;
+                    str = (char*) realloc(str, str_size * sizeof(char));
+                    str[str_size - 1] = '\0';
+                    str[str_size - 2] = '=';
+                    *tag = EQUALS_EQUALS;
+                    break;
+                }
                 *tag = EQUALS;
                 break;
             case ',':
@@ -102,6 +130,56 @@ namespace Lexer
             case ']':
                 *tag = CLOSE_BRACKET;
                 break;
+            case '!':
+                if(peek_char(lexer->file) == '=') {
+                    get_char(lexer->file);
+                    str_size++;
+                    str = (char*) realloc(str, str_size * sizeof(char));
+                    str[str_size - 1] = '\0';
+                    str[str_size - 2] = '=';
+                    *tag = BANG_EQUALS;
+                    break;
+                }
+                *tag = BANG;
+                break;
+            case '&':
+                if(peek_char(lexer->file) == '&') {
+                    get_char(lexer->file);
+                    str_size++;
+                    str = (char*) realloc(str, str_size * sizeof(char));
+                    str[str_size - 1] = '\0';
+                    str[str_size - 2] = '&';
+                    *tag = L_AND;
+                    break;
+                }
+                *tag = AND;
+                break;
+            case '|':
+                if(peek_char(lexer->file) == '|') {
+                    get_char(lexer->file);
+                    str_size++;
+                    str = (char*) realloc(str, str_size * sizeof(char));
+                    str[str_size - 1] = '\0';
+                    str[str_size - 2] = '|';
+                    *tag = L_OR;
+                    break;
+                }
+                *tag = PIPE;
+                break;
+            case '"':
+            {
+                while (peek_char(lexer->file) != '"')
+                {
+                    c = get_char(lexer->file);
+                    str_size++;
+                    str = (char*) realloc(str, str_size * sizeof(char));
+                    str[str_size - 2] = c;
+                    str[str_size - 1] = '\0';
+                }
+                get_char(lexer->file);
+                *tag = LITERAL;
+                break;
+            }
             default:
             {
                 if (isdigit(c))
@@ -114,7 +192,8 @@ namespace Lexer
                         str[str_size - 2] = c;
                         str[str_size - 1] = '\0';
                     }
-                    *tag = NUMBER;
+                    *tag = LITERAL;
+                    break;
                 }
                 else if (isalpha(c))
                 {
@@ -162,8 +241,8 @@ namespace Lexer
     {
         switch (tag)
         {
-        case NUMBER:
-            return "NUMBER";
+        case LITERAL:
+            return "LITERAL";
         case PLUS:
             return "PLUS";
         case MINUS:

@@ -59,7 +59,7 @@ namespace Lexer
             Token lexer_token = *token;
             switch (lexer_token.tag)
             {
-            case NUMBER:
+            case LITERAL:
                 printf("%d", atoi(lexer_token.data));
                 break;
             case KEYWORD:

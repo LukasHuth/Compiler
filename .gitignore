@@ -8,6 +8,7 @@ out/
 *.tar
 *.tar.gz
 *.tar.bz2
+*.exe
 valgrind*/
 output
 main

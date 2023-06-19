@@ -1,13 +1,13 @@
 #include "headers/AST.h"
 
-// AST* AST::Number(char* number) {AST* ast = new AST(Ast::NUMBER);ast->data.NUMBER.number = number; return ast;}
+// AST* AST::Number(char* literal) {AST* ast = new AST(Ast::LITERAL);ast->data.LITERAL.literal = literal; return ast;}
 const bool DEBUG = false;
 AST::AST(Ast::Tag tag, char* data)
 {
     this->tag = tag;
-    if(tag == Ast::NUMBER)
+    if(tag == Ast::LITERAL)
     {
-        this->data.NUMBER.number = data;
+        this->data.LITERAL.literal = data;
     }
 }
 AST::AST(Ast::Tag tag, char* data, std::vector<AST*> args)
@@ -159,8 +159,8 @@ void AST::print()
 {
     switch (this->tag)
     {
-    case Ast::NUMBER:
-        printf("%s", this->data.NUMBER.number);
+    case Ast::LITERAL:
+        printf("%s", this->data.LITERAL.literal);
         break;
     case Ast::BINARY_OP:
         printf("(");
@@ -267,6 +267,10 @@ void AST::print()
     case Ast::VARIABLE:
         printf("%s", this->data.VARIABLE.name);
         break;
+    case Ast::INCREMENT:
+      printf("%s += ", this->data.VAR_MANIP.name);
+      this->data.VAR_MANIP.ast->print();
+      break;
     default:
         printf("AST(print): Error: Unknown tag (%s)\n", get_tag_name(this->tag).c_str());
         break;
