@@ -395,8 +395,7 @@ namespace Parser
     std::cout << "factor: peek tag: " << Lexer::Tag_to_string(peek(lexer)) << std::endl;
     if (peek(lexer) == Lexer::LITERAL)
     {
-      char *literal = eat(lexer, Lexer::LITERAL)->data;
-      return new AST(Ast::LITERAL, literal);
+      return new AST(Ast::LITERAL, eat(lexer, Lexer::LITERAL)->data);
     }
     if (peek(lexer) == Lexer::OPEN_PAREN)
     {

@@ -68,9 +68,10 @@ namespace Codegen
 
     llvm::Function::Create(printf_type, llvm::Function::ExternalLinkage, "puts", module);
 
-    Codegen *codegen = new Codegen(ast);
+    // Codegen *codegen = new Codegen(ast);
+    std::unique_ptr<Codegen> codegen(new Codegen(ast));
 
-    codegen_generate(codegen, module, builder, context);
+    codegen_generate(codegen.get(), module, builder, context);
     // llvm::verifyModule(*module);
     llvm::StringRef filename("main.ll");
     std::error_code error_code;
@@ -89,9 +90,11 @@ namespace Codegen
     OS.flush();
     // */
 
-    //  module->print(out, nullptr); // used to print module to file in human readable format
+    module->print(out, nullptr); // used to print module to file in human readable format
 
-    delete codegen;
+    free(context);
+
+    // delete codegen;
   }
   void codegen_generate(Codegen *codegen, llvm::Module *module, llvm::IRBuilder<> builder, llvm::LLVMContext *context)
   {

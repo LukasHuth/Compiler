@@ -2,6 +2,7 @@
 #define H_SYNTATIC_ANALYSIS
 
 #include <iostream>
+#include <memory>
 
 #include "AST.h"
 

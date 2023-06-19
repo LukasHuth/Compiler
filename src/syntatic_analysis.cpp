@@ -19,11 +19,12 @@ void syntatic_analysis(AST *node)
     std::cout << "ERROR: node is not a NODE (" << Ast::get_tag_name(node->tag) << ")" << std::endl;
     exit(10); // ERROR CODE 10
   }
-  Symbol_table *table = new Symbol_table();
+  // Symbol_table *table = new Symbol_table();
+  std::unique_ptr<Symbol_table> table(new Symbol_table());
   bool has_main = false;
   for (size_t i = 0; i < node->children.size(); i++)
   {
-    bool is_main = syntatic_analysis_children(node->children[i], table);
+    bool is_main = syntatic_analysis_children(node->children[i], table.get());
     if (is_main)
       has_main = true;
   }
@@ -32,7 +33,7 @@ void syntatic_analysis(AST *node)
     printf("ERROR: no main function\n");
     exit(10); // ERROR CODE 10
   }
-  delete table;
+  // delete table;
 }
 bool syntatic_analysis_children(AST *ast, Symbol_table *table)
 {
