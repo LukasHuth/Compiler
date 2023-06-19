@@ -145,7 +145,6 @@ namespace Parser
           std::cout << "Parser(parse_expr): Error: Expected " << Lexer::Tag_to_string(token->tag) << ", got " << Lexer::Tag_to_string(peek(lexer)) << std::endl;
         }
       }
-      // TODO: Implement index assignment and add support for -=, +=, *=, /=, etc.
       printf("Parser(parse_expr): Error: Unexpected token %s\n", Lexer::Tag_to_string(peek(lexer)).c_str());
     }
     if (peek(lexer) == Lexer::KEYWORD)
@@ -241,9 +240,6 @@ namespace Parser
   {
     lexer->index = lexer->index;
     function->tag = function->tag;
-    // printf("Parser(parse_for): Error: For not implemented\n");
-    // exit(2);
-    // /*
     eat(lexer, Lexer::OPEN_PAREN);
     AST *init = parse_expr(lexer, function);
     eat(lexer, Lexer::SEMICOLON);
@@ -261,7 +257,6 @@ namespace Parser
     eat(lexer, Lexer::CLOSE_PAREN);
     AST *body = parse_body(lexer, function);
     return new AST(init, condition, update, body);
-    // */
   }
 
   AST *parse_while(Lexer::Lexer *lexer, AST *function)
@@ -351,19 +346,16 @@ namespace Parser
       {
         if (left->data.TUPLE.op == token->data)
         {
-          // AST* right = parse_factor(lexer, function);
           left = new AST(Ast::BINARY_OP, left, right, token->data);
           continue;
         }
         if (Ast::tag_get_priority(left->data.TUPLE.op) < Ast::tag_get_priority(token->data))
         {
-          // AST* right = parse_factor(lexer, function);
           AST *new_left = new AST(Ast::BINARY_OP, left->data.TUPLE.left, right, token->data);
           left->data.TUPLE.left = new_left;
           continue;
         }
       }
-      // AST *right = parse_factor(lexer, function);
       left = new AST(Ast::BINARY_OP, left, right, token->data);
     }
     return left;
@@ -427,8 +419,6 @@ namespace Parser
       return new AST(Ast::VARIABLE, name, b_is_arg, position);
     }
     return parse_expr(lexer, function);
-    // printf("Parser(parse_factor): Error: Unexpected token %s\n", Lexer::Tag_to_string(peek(lexer)).c_str());
-    // exit(1);
   }
   AST *parse_call(Lexer::Lexer *lexer, char *name, AST *function)
   {
