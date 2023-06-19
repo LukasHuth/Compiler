@@ -2,48 +2,40 @@
 #define H_SYMBOL_TABLE
 
 #include "AST.h"
+// TODO: finish conversion
 
-typedef struct {
-    AST *type;
-    char* name;
-} VARIABLE;
+namespace Symbol
+{
+    class Variable {
+        public:
+            AST *type;
+            std::string name;
+        Variable(AST *type, std::string name);
+    };
 
-typedef struct {
-    VARIABLE* *variables;
-    size_t size;
-} VARIABLE_ARRAY;
+    class Function {
+        public:
+            std::vector<AST*> attributes;
+            std::string name;
+        void add(AST *attribute);
+        Function(std::string name);
+    };
 
-typedef struct {
-    AST* *attributes;
-    size_t size;
-    char* name;
-} FUNC;
+}
 
-typedef struct {
-    FUNC* *functions;
-    size_t size;
-} FUNC_ARRAY;
-
-typedef struct {
-    VARIABLE_ARRAY *variables;
-    FUNC_ARRAY *functions;
-} SYMBOL_TABLE;
-
-void variable_array_add_variable(VARIABLE_ARRAY *array, VARIABLE *variable);
-VARIABLE *variable_array_get_variable(VARIABLE_ARRAY *array, char *name);
-bool variable_array_has_variable(VARIABLE_ARRAY *array, char *name);
-VARIABLE_ARRAY *create_variable_array();
-VARIABLE *create_variable(AST *type, char *name);
-void free_variable(VARIABLE *variable);
-void free_variable_array(VARIABLE_ARRAY *array);
+class Symbol_table {
+    public:
+        std::vector<Symbol::Function*> functions;
+        std::vector<Symbol::Variable*> variables;
+    void add_variable(Symbol::Variable* variable);
+    void add_function(Symbol::Function* function);
+    void clear_variables();
+    Symbol::Variable* get_variable(std::string name);
+    size_t var_amount();
+    bool has_variable(std::string name);
+    ~Symbol_table();
+};
+// TODO: Add this to AST
 bool has_same_type(AST *value, AST *type);
-FUNC_ARRAY *create_function_array();
-FUNC *create_function(char *name);
-void FUNCTION_add_attribute(FUNC *function, AST *attribute);
-void FUNCTION_ARRAY_add_function(FUNC_ARRAY *array, FUNC *function);
-void free_function(FUNC *function);
-void free_function_array(FUNC_ARRAY *array);
-SYMBOL_TABLE *create_symbol_table();
-void free_symbol_table(SYMBOL_TABLE *table);
 
 #endif

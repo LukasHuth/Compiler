@@ -3,20 +3,22 @@ out_dir = out
 src_dir = src
 
 CC=gcc
-CFLAGS=-I. -Wall -Wextra -Werror -Wpedantic -std=c99 -g -O3 -lm -Iinclude -L/usr/lib/llvm-10/lib -lLLVM-10
+CXX = g++
+# CFLAGS=-I. -Wall -Wextra -Werror -Wpedantic -std=c++2a -g -O3 -lm -Iinclude -L/usr/lib/llvm-10/lib -lLLVM-10
+CFLAGS=-I. -Wall -Wextra -Werror -Wpedantic -Wno-unused-parameter -std=c++2a -g -lm -Iinclude -L/usr/lib/llvm-10/lib -lLLVM-10 -I/usr/include/llvm-10/ -I/usr/include/llvm-c-10/
 DEPS = $(wildcard $(src_dir)/*.h)
-SOURCE = $(wildcard $(src_dir)/*.c)
-OBJ_temp = $(SOURCE:.c=.o)
+SOURCE = $(wildcard $(src_dir)/*.cpp)
+OBJ_temp = $(SOURCE:.cpp=.o)
 OBJ = $(subst $(src_dir),$(out_dir),$(OBJ_temp))
 exec = main
 
-$(out_dir)/%.o: $(src_dir)/%.c $(DEPS)
+$(out_dir)/%.o: $(src_dir)/%.cpp $(DEPS)
 	if [ ! -d $(out_dir) ]; then mkdir $(out_dir); fi
-	$(CC) -c -o $@ $< $(CFLAGS)
+	$(CXX) -c -o $@ $< $(CFLAGS)
 
 $(exec): $(OBJ)
 	if [ ! -d $(out_dir) ]; then mkdir $(out_dir); fi
-	$(CC) -o $@ $^ $(CFLAGS)
+	$(CXX) -o $@ $^ $(CFLAGS)
 
 clean:
 	if [ ! -d $(out_dir) ]; then mkdir $(out_dir); fi

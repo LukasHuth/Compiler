@@ -2,7 +2,6 @@
 
 int main()
 {
-    printf("Hello World!(better)\n");
     const char* filename = "test.txt";
     FILE* file = fopen(filename, "r");
     if (file == NULL)
@@ -10,16 +9,14 @@ int main()
         printf("Could not open file %s\n", filename);
         return 1;
     }
-    LEXER *lexer = init_lexer(file);
-    lex(lexer);
-    lexer_print(lexer);
-    AST *ast = parse(lexer);
-    // AST_print(ast);
+    Lexer::Lexer *lexer = Lexer::init(file);
+    Lexer::lex(lexer);
+    AST *ast = Parser::parse(lexer);
     syntatic_analysis(ast);
-    init_codegen(ast);
-    // codegen_generate(codegen);
-    // free everything
-    lexer_free(lexer);
+    // ast->print();
+    Codegen::init(ast);
+    // std::cout << "Codegen done" << std::endl;
+    Lexer::Free(lexer);
     fclose(file);
     return 0;
 }
