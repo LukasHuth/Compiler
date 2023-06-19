@@ -47,6 +47,8 @@ namespace Codegen
         llvm::InitializeNativeTargetAsmPrinter();
         // LLVMInitializeNativeAsmPrinter();
         llvm::InitializeNativeTargetAsmParser();
+        llvm::initializeWriteBitcodePassPass(*llvm::PassRegistry::getPassRegistry());
+        // llvm::initializeTarget(*llvm::PassRegistry::getPassRegistry("x86_64-pc-linux-gnu"));
         // LLVMInitializeNativeAsmParser();
 
         std::cout << "stage 1" << std::endl;
@@ -54,6 +56,7 @@ namespace Codegen
         // LLVMModuleRef module = LLVMModuleCreateWithName("new_module");
         llvm::LLVMContext* context = new llvm::LLVMContext();
         llvm::Module *module = new llvm::Module("new_module", *context);
+        module->setTargetTriple("x86_64-pc-linux-gnu");
         // module_test = module_test; // DEBUG
         // auto module 
         // char* target = LLVMGetDefaultTargetTriple();
@@ -94,16 +97,72 @@ namespace Codegen
 
         codegen_generate(codegen, module, builder, context);
 
+
+        // Working
+        /*
+        llvm::Function* main_function = llvm::Function::Create(llvm::FunctionType::get(llvm::IntegerType::get(*context, 32), false), llvm::Function::ExternalLinkage, "main", module);
+        main_function->setCallingConv(llvm::CallingConv::C);
+        // main_function->addFnAttr(llvm::Attribute::NoUnwind);
+        // llvm::BasicBlock* main_block = llvm::BasicBlock::Create(*context, "main_entry", main_function);
+        llvm::BasicBlock* main_block = llvm::BasicBlock::Create(*context, "main_entry", main_function);
+        llvm::IRBuilder<> main_builder(main_block);
+        // builder.CreateRet(llvm::ConstantInt::get(llvm::IntegerType::get(*context, 32), 0, true));
+        main_builder.CreateAlloca(llvm::IntegerType::get(*context, 32), 0, "main_alloca");
+        // llvm::ReturnInst::Create(*context, llvm::ConstantInt::get(llvm::IntegerType::get(*context, 32), 0, true), main_block);
+        llvm::Value* val = main_builder.CreateAdd(llvm::ConstantInt::get(llvm::IntegerType::get(*context, 32), 1, true), llvm::ConstantInt::get(llvm::IntegerType::get(*context, 32), 2, true), "main_add");
+        main_builder.CreateRet(val);
+        */
         std::cout << "stage 4" << std::endl;
         // LLVMWriteBitcodeToFile(module, "main.bc");
         // llvm::WriteBitcodeToFile(*module, "main.bc");
-        llvm::verifyModule(*module);
+        // std::cout << "verifying module" << std::endl;
+        // bool test = llvm::verifyModule(*module);
+        // if(!test)
+        // {
+        //     std::cout << "module is not valid" << std::endl;
+        //     return;
+        // }
+        std::cout << "creating filename stringref" << std::endl;
         llvm::StringRef filename("main.ll");
+        std::cout << "creating error_code" << std::endl;
         std::error_code error_code;
+        std::cout << "creating raw_fd_ostream" << std::endl;
         llvm::raw_fd_ostream out(filename, error_code);
-        llvm::WriteBitcodeToFile(*module, out);
+        std::cout << "checking error_code" << std::endl;
+        if(error_code.value() != 0)
+        {
+            std::cout << "error_code is not 0 (" << error_code << ")" << std::endl;
+            return;
+        }
+        std::cout << "error_code is " << error_code << std::endl;
+        // std::cout << "writing bitcode to file" << std::endl;
+        // llvm::WriteBitcodeToFile(*module, out);
+        // std::cout << "writing module to file" << std::endl;
+        // std::cout << "creating buffer" << std::endl;
+        // llvm::SmallVectorImpl<char> &Buffer = *new llvm::SmallVector<char, 0>();
+        // std::cout << "creating bitcode_writer" << std::endl;
+        // llvm::BitcodeWriter bitcode_writer = llvm::BitcodeWriter(Buffer);
+        // std::cout << "writing module" << std::endl;
+        // bitcode_writer.writeModule(*module);
+        // std::cout << "writing buffer" << std::endl;
+        // out << Buffer;
+
+        // Working
+        // /*
+        std::error_code EC;
+        llvm::raw_fd_ostream OS("main.bc", EC, llvm::sys::fs::F_None);
+        WriteBitcodeToFile(*module, OS);
+        OS.flush();
+        // */
+
+    //    module->print(out, nullptr); // used to print module to file in human readable format
+
+
+        // std::cout << module->getValueSymbolTable() << std::endl;
+        // module->print(out, nullptr);
         // if(DEBUG) LLVMPrintModuleToFile(module, "main.ll", NULL);
         // Free(codegen);
+        std::cout << "stage 5" << std::endl;
         delete codegen;
         // LLVMDisposeBuilder(builder);
         // LLVMDisposeModule(module);
@@ -142,14 +201,17 @@ namespace Codegen
         char* type_name = ast->data.TYPE.name;
         if(strcmp(type_name, "int") == 0)
         {
+            std::cout << "get_type int" << std::endl;
             return llvm::IntegerType::get(*context, 32);
         }
         if(strcmp(type_name, "float") == 0)
         {
+            std::cout << "get_type float" << std::endl;
             return llvm::Type::getDoubleTy(*context);
         }
         else if(strcmp(type_name, "void") == 0)
         {
+            std::cout << "get_type void" << std::endl;
             return llvm::Type::getVoidTy(*context);
         }
         else
@@ -158,7 +220,7 @@ namespace Codegen
             return NULL;
         }
     }
-    void generate_function(AST *ast, llvm::Module* module, llvm::IRBuilder<> builder, llvm::LLVMContext* context)
+    void generate_function(AST *ast, llvm::Module* module, llvm::IRBuilder<> b, llvm::LLVMContext* context)
     {
         std::cout << "generate_function start" << std::endl;
         // TODO: breaking in this function
@@ -191,8 +253,10 @@ namespace Codegen
         // llvm::Function module->getOrInsertFunction(function_name, function_type); // HELP: https://releases.llvm.org/2.6/docs/tutorial/JITTutorial1.html
         llvm::Function* function = llvm::Function::Create(function_type, llvm::Function::ExternalLinkage, function_name, module);
         function->setCallingConv(llvm::CallingConv::C);
-        llvm::BasicBlock* entry = llvm::BasicBlock::Create(*context, "entry", function);
-        function->getBasicBlockList().push_back(entry);
+        std::string function_name_str(function_name);
+        llvm::BasicBlock* entry = llvm::BasicBlock::Create(*context, function_name_str, function);
+        // function->getBasicBlockList().push_back(entry);
+        llvm::IRBuilder<> builder(entry);
         // llvm::IRBuilder<> builder(entry);
         // llvm::Function* function = llvm::Function::Create(function_type, llvm::Function::ExternalLinkage, function_name, module);
         // llvm::Function::Create(llvm::FunctionType::get(llvm::IntegerType::get(*context, 32), printf_args_type_ref, false), llvm::Function::ExternalLinkage, "puts", module);
@@ -209,6 +273,11 @@ namespace Codegen
         info->function = function;
         info->module = module;
         info->context = context;
+        // llvm::BasicBlock::Create(*context, "entry", function);
+        // function->addBasicBlock(entry);
+        // llvm::BasicBlock* entry_ = llvm::BasicBlock::Create(*context, "entry1", function);
+        // llvm::IRBuilder<> b1 = llvm::IRBuilder<>(entry_);
+        // /*auto* A = */b1.CreateAlloca (llvm::Type::getInt32Ty(*context), nullptr, "a");
         generate_function_body(ast->data.FUNCTION.body, info, builder);
         std::cout << "generate_function end" << std::endl;
         // free(info->variables);
@@ -216,6 +285,7 @@ namespace Codegen
     }
     void generate_function_body(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder)
     {
+        std::cout << "generate_function_body start" << std::endl;
         if(ast == NULL){printf("AST is NULL\n");return;}
         // if(info->variables != NULL) free(info->variables);
         // info->variables = (LLVMValueRef*) calloc(0, sizeof(LLVMValueRef));
@@ -251,6 +321,7 @@ namespace Codegen
                 break;
             }
         }
+        std::cout << "generate_function_body end" << std::endl;
     }
     llvm::Value* get_number_type(AST *ast, llvm::LLVMContext* context)
     {
@@ -376,6 +447,7 @@ namespace Codegen
     }
     llvm::Value* generate_function_call(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder)
     {
+        std::cout << "generate_function_call" << std::endl;
         if(!isValidInfo(info)){printf("Info is invalid(function call)\n");return NULL;}
         if(ast == NULL){printf("AST is NULL\n");return NULL;}
         if(ast->tag != Ast::CALL){printf("AST is not a call\n");return NULL;}
@@ -400,10 +472,12 @@ namespace Codegen
         llvm::Value* result = builder.CreateCall(function, args, temp_name);
         free(temp_name);
         // free(args);
+        std::cout << "generate_function_call end" << std::endl;
         return result;
     }
     void generate_variable_assignment(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder)
     {
+        std::cout << "Generating variable assignment" << std::endl;
         if(ast == NULL){printf("AST is NULL\n");return;}
         if(!isValidInfo(info)){printf("Info is invalid(variable assignment)\n");return;}
         if(ast->tag != Ast::ASSIGN){printf("AST is not an assignment\n");return;}
@@ -412,7 +486,7 @@ namespace Codegen
         llvm::Value* value = generate_expression(expr, info, builder);
         if(value == NULL) return;
         // LLVMValueRef variable = NULL;
-        llvm::Value* variable = NULL;
+        // llvm::Value* variable = NULL;
         // for(size_t i = 0; i < info->variable_count; i++)
         // {
         //     if(strcmp(name, LLVMGetValueName(info->variables[i])) == 0)
@@ -421,35 +495,86 @@ namespace Codegen
         //         break;
         //     }
         // }
+        // std::cout << "searching for variable: " << name << std::endl;
+        // for(llvm::Value* variable : info->variable_values)
+        // {
+        //     std::cout << "Variable name: " << variable->getName().str() << std::endl;
+        //     if(variable->getName() == name)
+        //     {
+        //         std::cout << "Found variable" << std::endl;
+        //         variable = variable;
+        //         break;
+        //     }
+        // }
+        // LLVMBuildStore(info->builder, value, variable);
+        // info->module->getNamedValue(name);
+        // builder.CreateStore(value, variable);
+        std::string str = "%";
+        str += name;
+        // llvm::Value* variable = info->module->getNamedValue(str);
         for(llvm::Value* variable : info->variable_values)
         {
-            if(variable->getName() == name)
+            std::string str = variable->getName().str();
+            std::cout << "Variable name: " << str << " searched: " << name << "|" << (str == name) << std::endl;
+            if(str == name)
             {
-                variable = variable;
-                break;
+                std::cout << "Found variable!!!" << std::endl;
+                if(variable == NULL) std::cout << "Variable is NULL" << std::endl;
+                builder.CreateStore(value, variable);
+                return;
             }
         }
-        // LLVMBuildStore(info->builder, value, variable);
-        builder.CreateStore(value, variable);
+        std::cout << "Variable not found, creating new variable" << std::endl;
+        // if(variable == NULL)
+        // {
+        //     std::cout << "Variable not found, creating new variable" << std::endl;
+        //     // variable = builder.CreateAlloca(type, 0, name);
+        //     // info->variable_values.push_back(variable);
+        // }
+            // llvm::Type* type = llvm::Type::getInt32Ty(*info->context);
+            // llvm::Value* var = builder.CreateAlloca(type, 0, name);
+        // builder.CreateStore(value, variable);
+        std::cout << "Finished generating variable assignment" << std::endl;
     }
     void generate_variable_declaration(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder)
     {
+        std::cout << "Generating variable declaration" << std::endl;
+        
+        // // std::string blockname = "entry" + std::to_string(info->function->getBasicBlockList().size());
+        // char* blockname = (char*) calloc(10, sizeof(char));
+        // sprintf(blockname, "entry%ld", info->function->getBasicBlockList().size());
+        // blockname = (char*) realloc(blockname, sizeof(char) * (strlen(blockname) + 1));
+        // llvm::BasicBlock* block = llvm::BasicBlock::Create(*info->context, blockname, info->function);
+        // llvm::IRBuilder<> builder(block);
+        // free(blockname);
+
+        size_t count = 0;
         if(ast == NULL){printf("AST is NULL\n");return;}
         if(!isValidInfo(info)){printf("Info is invalid(variable_declaration)\n");return;}
         if(ast->tag != Ast::DECLARATION){printf("AST is not a declaration\n");return;}
         llvm::Type* type = get_type(ast->data.VAR_MANIP.ast, info->context);
+        std::cout << count++ << std::endl;
         // LLVMValueRef value = LLVMBuildAlloca(info->builder, type, ast->data.VAR_MANIP.name);
         // TODO: Add initializer possibly
-        llvm::Value* value = builder.CreateAlloca(type, 0, ast->data.VAR_MANIP.name);
+        // llvm::Value* zero = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*info->context), 0);
+        std::cout << count++ << std::endl;
+        std::string name = ast->data.VAR_MANIP.name;
+        // std::string struct_name = type->getStructName();
+        // std::cout << struct_name << std::endl;
+        llvm::Value* value = builder.CreateAlloca(type, nullptr, name);
+        std::cout << count++ << std::endl;
         // LLVMSetInitializer(value, LLVMConstInt(LLVMInt32Type(), 0, 0));
         // value->setInitializer(llvm::ConstantInt::get(llvm::Type::getInt32Ty(info->context), 0));
         info->variable_values.push_back(value);
+        std::cout << count++ << std::endl;
         // info->variable_count++;
         // info->variables = (LLVMValueRef*) realloc(info->variables, sizeof(LLVMValueRef) * info->variable_count);
         // info->variables[info->variable_count - 1] = value;
+        std::cout << "Finished generating variable declaration" << std::endl;
     }
     void generate_return(AST *ast, InternalInfo* info, llvm::IRBuilder<> builder)
     {
+        std::cout << "Generating return start" << std::endl;
         if(ast == NULL) return;
         if(ast->data.RETURN.expr == NULL) return;
         if(!isValidInfo(info)) return;
@@ -461,9 +586,11 @@ namespace Codegen
         llvm::LLVMContext& context = block->getContext();
         llvm::ReturnInst::Create(context, value, block);
         // LLVMBuildRet(info->builder, value);
+        std::cout << "Generating return end" << std::endl;
     }
     llvm::Value* generate_expression(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder)
     {
+        std::cout << "Generating expression start" << std::endl;
         if(ast == NULL) return NULL;
         if(!isValidInfo(info)) return NULL;
         char* temp_name = (char*) calloc(10, sizeof(char)); // some leak is happening with this
@@ -503,6 +630,7 @@ namespace Codegen
                 // value = LLVMBuildLoad(info->builder, value, temp_name);
                 value = builder.CreateLoad(value, temp_name);
                 free(temp_name);
+                std::cout << "Generating expression end" << std::endl;
                 return value;
             case Ast::BINARY_OP:
                 value = generate_binary_expression(ast, info, builder);
@@ -529,6 +657,7 @@ namespace Codegen
                 exit(5);
                 break;
         }
+        std::cout << "Generating expression end" << std::endl;
         free(temp_name);
         return value;
     }

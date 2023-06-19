@@ -12,6 +12,7 @@
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/AssemblyAnnotationWriter.h"
 // #include "llvm-c/Core.h"
 // #include "llvm-c/Analysis.h"
 // #include "llvm-c/Target.h"
