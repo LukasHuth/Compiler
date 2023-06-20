@@ -64,7 +64,7 @@ namespace Codegen
 
     llvm::ArrayRef<llvm::Type *> printf_args_type_ref(printf_args_type);
 
-    llvm::FunctionType *printf_type = llvm::FunctionType::get(llvm::IntegerType::get(*context, 32), printf_args_type_ref, false);
+    llvm::FunctionType *printf_type = llvm::FunctionType::get(llvm::PointerType::get(llvm::IntegerType::get(*context, 8), 0), printf_args_type_ref, false);
 
     llvm::Function::Create(printf_type, llvm::Function::ExternalLinkage, "puts", module);
 
@@ -156,6 +156,11 @@ namespace Codegen
     {
       std::cout << "get_type void" << std::endl;
       return llvm::Type::getVoidTy(*context);
+    }
+    else if (strcmp(type_name, "string") == 0)
+    {
+      std::cout << "get_type string" << std::endl;
+      return llvm::PointerType::get(llvm::IntegerType::get(*context, 8), 0);
     }
     else
     {
@@ -279,11 +284,26 @@ namespace Codegen
     }
     std::cout << "generate_function_body end" << std::endl;
   }
-  llvm::Value *get_number_type(AST *ast, llvm::LLVMContext *context)
+  llvm::Value *get_number_type(AST *ast, llvm::LLVMContext *context, llvm::Module *module, llvm::IRBuilder<> builder)
   {
     if (ast == NULL)
       return NULL;
     char *literal = ast->data.LITERAL.literal;
+    if(literal[0] == '"')
+    {
+      llvm::Function* function = module->getFunction("puts");
+      if(function == NULL)
+      {
+        printf("Function is NULL\n");
+        return NULL;
+      }
+      literal++;
+      llvm::Value* value = builder.CreateGlobalStringPtr(literal);
+      std::vector<llvm::Value*> args;
+      args.push_back(value);
+      llvm::Value* result = builder.CreateCall(function, args);
+      return result;
+    }
     float f;
     (void)sscanf(literal, "%f", &f);
     llvm::Value *value = NULL;
@@ -383,7 +403,15 @@ namespace Codegen
       }
 
       llvm::Value *ret = NULL;
-      if (type_id == llvm::Type::IntegerTyID)
+      if(type_id == llvm::Type::PointerTyID)
+      {
+        llvm::Value *format_str = builder.CreateGlobalStringPtr("%s\n", "format_str_s");
+        std::vector<llvm::Value *> args;
+        args.push_back(format_str);
+        args.push_back(value);
+        ret = builder.CreateCall(function, args, "ret");
+      }
+      else if (type_id == llvm::Type::IntegerTyID)
       {
         llvm::Value *format_str = builder.CreateGlobalStringPtr("%d\n", "format_str_d");
         std::vector<llvm::Value *> args;
@@ -548,7 +576,7 @@ namespace Codegen
     switch (ast->tag)
     {
     case Ast::LITERAL:
-      value = get_number_type(ast, info->context);
+      value = get_number_type(ast, info->context, info->module, builder);
       break;
     case Ast::VARIABLE:
       if (ast->data.VARIABLE.is_arg)
