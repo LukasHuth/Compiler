@@ -437,11 +437,12 @@ namespace Codegen
       if (args[i] == NULL)
         return NULL;
     }
-    char *temp_name = (char *)calloc(10, sizeof(char));
-    sprintf(temp_name, "_%ld", info->temp_count++);
-    temp_name = (char *)realloc(temp_name, sizeof(char) * (strlen(temp_name) + 1));
-    llvm::Value *result = builder.CreateCall(function, args, temp_name);
-    free(temp_name);
+    // char *temp_name = (char *)calloc(10, sizeof(char));
+    // sprintf(temp_name, "_%ld", info->temp_count++);
+    // temp_name = (char *)realloc(temp_name, sizeof(char) * (strlen(temp_name) + 1));
+    // llvm::Value *result = builder.CreateCall(function, args, temp_name);
+    llvm::Value *result = builder.CreateCall(function, args);
+    // free(temp_name);
     std::cout << "generate_function_call end" << std::endl;
     return result;
   }
@@ -556,8 +557,8 @@ namespace Codegen
         return info->function->arg_begin() + ast->data.VARIABLE.arg_index; // INFO: This could be wrong
         std::cout << "Critical point begin" << std::endl;
       }
-      sprintf(temp_name, "_%ld", info->temp_count++);
-      temp_name = (char *)realloc(temp_name, sizeof(char) * (strlen(temp_name) + 1));
+      // sprintf(temp_name, "_%ld", info->temp_count++);
+      // temp_name = (char *)realloc(temp_name, sizeof(char) * (strlen(temp_name) + 1));
       value = NULL;
       for (llvm::Value *variable : info->variable_values)
       {
@@ -568,8 +569,8 @@ namespace Codegen
       }
       if (value == NULL)
         return NULL;
-      value = builder.CreateLoad(value, temp_name);
-      free(temp_name);
+      value = builder.CreateLoad(value);
+      // free(temp_name);
       std::cout << "Generating expression end" << std::endl;
       return value;
     case Ast::BINARY_OP:
@@ -618,51 +619,51 @@ namespace Codegen
     free(temp_name);
     return value;
   }
-  llvm::Value *generate_binary_operation_with_int(char *op, llvm::Value *left, llvm::Value *right, char *temp_name, llvm::IRBuilder<> builder)
+  llvm::Value *generate_binary_operation_with_int(char *op, llvm::Value *left, llvm::Value *right, llvm::IRBuilder<> builder)
   {
     if (strcmp(op, "+") == 0)
     {
-      return builder.CreateAdd(left, right, temp_name);
+      return builder.CreateAdd(left, right);
     }
     else if (strcmp(op, "-") == 0)
     {
-      return builder.CreateSub(left, right, temp_name);
+      return builder.CreateSub(left, right);
     }
     else if (strcmp(op, "*") == 0)
     {
-      return builder.CreateMul(left, right, temp_name);
+      return builder.CreateMul(left, right);
     }
     else if (strcmp(op, "/") == 0)
     {
-      return builder.CreateSDiv(left, right, temp_name);
+      return builder.CreateSDiv(left, right);
     }
     else if (strcmp(op, "==") == 0)
     {
-      return builder.CreateICmpEQ(left, right, temp_name);
+      return builder.CreateICmpEQ(left, right);
     }
     else if (strcmp(op, "<") == 0)
     {
-      return builder.CreateICmpULT(left, right, temp_name);
+      return builder.CreateICmpULT(left, right);
     }
     else if (strcmp(op, ">") == 0)
     {
-      return builder.CreateICmpUGT(left, right, temp_name);
+      return builder.CreateICmpUGT(left, right);
     }
     else if (strcmp(op, "<=") == 0)
     {
-      return builder.CreateICmpULE(left, right, temp_name);
+      return builder.CreateICmpULE(left, right);
     }
     else if (strcmp(op, ">=") == 0)
     {
-      return builder.CreateICmpUGE(left, right, temp_name);
+      return builder.CreateICmpUGE(left, right);
     }
     else if (strcmp(op, "!=") == 0)
     {
-      return builder.CreateICmpNE(left, right, temp_name);
+      return builder.CreateICmpNE(left, right);
     }
     else if (strcmp(op, "&&") == 0)
     {
-      return builder.CreateAnd(left, right, temp_name);
+      return builder.CreateAnd(left, right);
     }
     else
     {
@@ -670,51 +671,51 @@ namespace Codegen
       return NULL;
     }
   }
-  llvm::Value *generate_binary_operation_with_double(char *op, llvm::Value *left, llvm::Value *right, char *temp_name, llvm::IRBuilder<> builder)
+  llvm::Value *generate_binary_operation_with_double(char *op, llvm::Value *left, llvm::Value *right, llvm::IRBuilder<> builder)
   {
     if (strcmp(op, "+") == 0)
     {
-      return builder.CreateFAdd(left, right, temp_name);
+      return builder.CreateFAdd(left, right);
     }
     else if (strcmp(op, "-") == 0)
     {
-      return builder.CreateFSub(left, right, temp_name);
+      return builder.CreateFSub(left, right);
     }
     else if (strcmp(op, "*") == 0)
     {
-      return builder.CreateFMul(left, right, temp_name);
+      return builder.CreateFMul(left, right);
     }
     else if (strcmp(op, "/") == 0)
     {
-      return builder.CreateFDiv(left, right, temp_name);
+      return builder.CreateFDiv(left, right);
     }
     else if (strcmp(op, "==") == 0)
     {
-      return builder.CreateFCmpOEQ(left, right, temp_name);
+      return builder.CreateFCmpOEQ(left, right);
     }
     else if (strcmp(op, "!=") == 0)
     {
-      return builder.CreateFCmpONE(left, right, temp_name);
+      return builder.CreateFCmpONE(left, right);
     }
     else if (strcmp(op, "<") == 0)
     {
-      return builder.CreateFCmpOLT(left, right, temp_name);
+      return builder.CreateFCmpOLT(left, right);
     }
     else if (strcmp(op, ">") == 0)
     {
-      return builder.CreateFCmpOGT(left, right, temp_name);
+      return builder.CreateFCmpOGT(left, right);
     }
     else if (strcmp(op, "<=") == 0)
     {
-      return builder.CreateFCmpOLE(left, right, temp_name);
+      return builder.CreateFCmpOLE(left, right);
     }
     else if (strcmp(op, ">=") == 0)
     {
-      return builder.CreateFCmpOGE(left, right, temp_name);
+      return builder.CreateFCmpOGE(left, right);
     }
     else if (strcmp(op, "&&") == 0)
     {
-      return builder.CreateAnd(left, right, temp_name);
+      return builder.CreateAnd(left, right);
     }
     else
     {
@@ -722,16 +723,16 @@ namespace Codegen
       return NULL;
     }
   }
-  llvm::Value *generate_binary_operation_with_string(char *op, llvm::Value *left, llvm::Value *right, char *temp_name, llvm::IRBuilder<> builder)
+  llvm::Value *generate_binary_operation_with_string(char *op, llvm::Value *left, llvm::Value *right, llvm::IRBuilder<> builder)
   {
     llvm::Type::TypeID typekind = left->getType()->getTypeID();
     if (typekind == llvm::Type::TypeID::IntegerTyID)
     {
-      return generate_binary_operation_with_int(op, left, right, temp_name, builder);
+      return generate_binary_operation_with_int(op, left, right, builder);
     }
     else if (typekind == llvm::Type::TypeID::DoubleTyID)
     {
-      return generate_binary_operation_with_double(op, left, right, temp_name, builder);
+      return generate_binary_operation_with_double(op, left, right, builder);
     }
     else
     {
@@ -774,10 +775,10 @@ namespace Codegen
       printf("Right is NULL (0)\n");
       return NULL;
     }
-    char *temp_name = (char *)calloc(1, sizeof(char *));
-    sprintf(temp_name, "_%ld", info->temp_count++);
-    llvm::Value *value = generate_binary_operation_with_string(op, left, right, temp_name, builder);
-    free(temp_name);
+    // char *temp_name = (char *)calloc(1, sizeof(char *));
+    // sprintf(temp_name, "_%ld", info->temp_count++);
+    llvm::Value *value = generate_binary_operation_with_string(op, left, right, builder);
+    // free(temp_name);
     return value;
   }
   llvm::Value *generate_increment(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder)
@@ -810,19 +811,38 @@ namespace Codegen
   llvm::BasicBlock *generate_for(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder)
   {
     generate_expression(ast->data.FOR.init, info, builder);
-    llvm::BasicBlock *loop = llvm::BasicBlock::Create(*info->context, "loop", info->function);
-    builder.CreateBr(loop);
-    builder.SetInsertPoint(loop);
+    llvm::BasicBlock *test_block = llvm::BasicBlock::Create(*info->context);
+    info->function->getBasicBlockList().push_back(test_block);
+    builder.CreateBr(test_block);
+    builder.SetInsertPoint(test_block);
+    llvm::Value *test = generate_expression(ast->data.FOR.condition, info, builder);
+    llvm::BasicBlock *block = llvm::BasicBlock::Create(*info->context);
+    info->function->getBasicBlockList().push_back(block);
+    llvm::BasicBlock *after = llvm::BasicBlock::Create(*info->context);
+    // info->function->getBasicBlockList().push_back(after);
+    builder.CreateCondBr(test, block, after);
+    builder.SetInsertPoint(block);
     AST *body = ast->data.FOR.body;
     std::vector<AST *> body_children = body->children;
+    llvm::BasicBlock *body_block = NULL;
     for (AST *child : body_children)
     {
-      generate_body_content(child, info, builder);
+      llvm::BasicBlock* block = generate_body_content(child, info, builder);
+      if(body_block == NULL) {
+        body_block = block;
+      }
     }
+    llvm::BasicBlock *increment = llvm::BasicBlock::Create(*info->context);
+    info->function->getBasicBlockList().push_back(increment);
+    if(body_block != NULL) {
+      builder.SetInsertPoint(body_block);
+    }
+    builder.CreateBr(increment);
+    builder.SetInsertPoint(increment);
     generate_body_content(ast->data.FOR.increment, info, builder);
-    llvm::Value *test = generate_expression(ast->data.FOR.condition, info, builder);
-    llvm::BasicBlock *after = llvm::BasicBlock::Create(*info->context, "afterloop", info->function);
-    builder.CreateCondBr(test, loop, after);
+    builder.CreateBr(test_block);
+    // llvm::BasicBlock *after = llvm::BasicBlock::Create(*info->context, "afterloop", info->function);
+    info->function->getBasicBlockList().push_back(after);
     builder.SetInsertPoint(after);
     return after;
   }

@@ -13,3 +13,4 @@ valgrind*/
 output
 main
 DrMemory-*
+test/
