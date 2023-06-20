@@ -34,7 +34,7 @@ namespace Codegen
   llvm::Value *generate_divide_assign(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder);
   llvm::Value *generate_function_call(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder);
   llvm::BasicBlock *generate_for(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder);
-  void generate_if(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder);
+  llvm::BasicBlock *generate_if(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder);
   void generate_function(AST *ast, llvm::Module *module, llvm::IRBuilder<> builder, llvm::LLVMContext *context);
 
   void codegen_generate(Codegen *codegen, llvm::Module *module, llvm::IRBuilder<> builder, llvm::LLVMContext *context);
@@ -239,7 +239,7 @@ namespace Codegen
       block = generate_for(child, info, builder);
       break;
     case Ast::IF:
-      generate_if(child, info, builder);
+      block = generate_if(child, info, builder);
       break;
     default:
       printf("Unknown tag: %s\n", Ast::get_tag_name(child->tag).c_str());
@@ -840,19 +840,19 @@ namespace Codegen
     builder.SetInsertPoint(block);
     AST *body = ast->data.FOR.body;
     std::vector<AST *> body_children = body->children;
-    llvm::BasicBlock *body_block = NULL;
+    // llvm::BasicBlock *body_block = NULL;
     for (AST *child : body_children)
     {
       llvm::BasicBlock* block = generate_body_content(child, info, builder);
-      if(body_block == NULL) {
-        body_block = block;
+      if(block != NULL) {
+        builder.SetInsertPoint(block);
       }
     }
     llvm::BasicBlock *increment = llvm::BasicBlock::Create(*info->context);
     info->function->getBasicBlockList().push_back(increment);
-    if(body_block != NULL) {
-      builder.SetInsertPoint(body_block);
-    }
+    // if(body_block != NULL) {
+    //   builder.SetInsertPoint(body_block);
+    // }
     builder.CreateBr(increment);
     builder.SetInsertPoint(increment);
     generate_body_content(ast->data.FOR.increment, info, builder);
@@ -862,12 +862,77 @@ namespace Codegen
     builder.SetInsertPoint(after);
     return after;
   }
-  // TODO: Implement
-  llvm::Value *generate_decrement(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder) { return NULL; }
-  // TODO: Implement
-  llvm::Value *generate_multiply_assign(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder) { return NULL; }
-  // TODO: Implement
-  llvm::Value *generate_divide_assign(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder) { return NULL; }
-  // TODO: Implement
-  void generate_if(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder) { return; }
+  llvm::BasicBlock *generate_if(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder) {
+    if (ast == NULL)
+      return NULL;
+    if (!isValidInfo(info))
+      return NULL;
+    if (ast->data.IF.condition == NULL)
+    {
+      printf("Condition is NULL\n");
+      return NULL;
+    }
+    llvm::Value *condition = generate_expression(ast->data.IF.condition, info, builder);
+    llvm::BasicBlock *block = llvm::BasicBlock::Create(*info->context);
+    info->function->getBasicBlockList().push_back(block);
+    // llvm::BasicBlock *after = llvm::BasicBlock::Create(*info->context, "afterif", info->function);  
+    llvm::BasicBlock *after = llvm::BasicBlock::Create(*info->context);  
+    builder.CreateCondBr(condition, block, after);
+    builder.SetInsertPoint(block);
+    AST *body = ast->data.IF.body;
+    std::vector<AST *> body_children = body->children;
+    for (AST *child : body_children)
+    {
+      generate_body_content(child, info, builder);
+    }
+    builder.CreateBr(after);
+    info->function->getBasicBlockList().push_back(after);
+    builder.SetInsertPoint(after);
+    return after;
+  }
+  llvm::Value *generate_decrement(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder) {
+    llvm::Value *expr = generate_expression(ast->data.VAR_MANIP.ast, info, builder);
+    for (llvm::Value *variable : info->variable_values)
+    {
+      // std::cout << "Variable: " << variable->getName().str() << " ast name: " << ast->data.VAR_MANIP.name << std::endl;
+      if (variable->getName() == ast->data.VAR_MANIP.name)
+      {
+        llvm::Value *value = builder.CreateLoad(variable);
+        value = builder.CreateSub(value, expr);
+        builder.CreateStore(value, variable);
+        return value;
+      }
+    }
+    return expr;
+  }
+  llvm::Value *generate_divide_assign(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder) {
+    llvm::Value *expr = generate_expression(ast->data.VAR_MANIP.ast, info, builder);
+    for (llvm::Value *variable : info->variable_values)
+    {
+      // std::cout << "Variable: " << variable->getName().str() << " ast name: " << ast->data.VAR_MANIP.name << std::endl;
+      if (variable->getName() == ast->data.VAR_MANIP.name)
+      {
+        llvm::Value *value = builder.CreateLoad(variable);
+        value = builder.CreateUDiv(value, expr);
+        builder.CreateStore(value, variable);
+        return value;
+      }
+    }
+    return expr;
+  }
+  llvm::Value *generate_multiply_assign(AST *ast, InternalInfo *info, llvm::IRBuilder<> builder) {
+    llvm::Value *expr = generate_expression(ast->data.VAR_MANIP.ast, info, builder);
+    for (llvm::Value *variable : info->variable_values)
+    {
+      // std::cout << "Variable: " << variable->getName().str() << " ast name: " << ast->data.VAR_MANIP.name << std::endl;
+      if (variable->getName() == ast->data.VAR_MANIP.name)
+      {
+        llvm::Value *value = builder.CreateLoad(variable);
+        value = builder.CreateMul(value, expr);
+        builder.CreateStore(value, variable);
+        return value;
+      }
+    }
+    return expr;
+  }
 }

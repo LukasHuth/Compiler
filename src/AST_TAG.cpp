@@ -62,7 +62,7 @@ namespace Ast
   {
     if (tag == "||" || tag == "&&")
       return 1;
-    if (tag == "==" || tag == "!=" || tag == "<" || tag == ">" || tag == "<=" || tag == ">=")
+    if (tag == "==" || tag == "!=" || tag == "<" || tag == ">" || tag == "<=" || tag == ">=" || tag == "<<" || tag == ">>" || tag == "&" || tag == "|" || tag == "^" || tag == "%")
       return 2;
     if (tag == "+" || tag == "-")
       return 3;
