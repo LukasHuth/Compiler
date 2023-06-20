@@ -637,6 +637,10 @@ namespace Codegen
     {
       return builder.CreateSDiv(left, right);
     }
+    else if(strcmp(op, "%") == 0)
+    {
+      return builder.CreateSRem(left, right);
+    }
     else if (strcmp(op, "==") == 0)
     {
       return builder.CreateICmpEQ(left, right);
@@ -665,6 +669,14 @@ namespace Codegen
     {
       return builder.CreateAnd(left, right);
     }
+    else if(strcmp(op, "<<") == 0)
+    {
+      return builder.CreateShl(left, right);
+    }
+    else if(strcmp(op, ">>") == 0)
+    {
+      return builder.CreateLShr(left, right);
+    }
     else
     {
       printf("Unknown operator: %s\n", op);
@@ -688,6 +700,10 @@ namespace Codegen
     else if (strcmp(op, "/") == 0)
     {
       return builder.CreateFDiv(left, right);
+    }
+    else if(strcmp(op, "%") == 0)
+    {
+      return builder.CreateFRem(left, right);
     }
     else if (strcmp(op, "==") == 0)
     {

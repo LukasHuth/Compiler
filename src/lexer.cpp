@@ -52,6 +52,16 @@ namespace Lexer
         *tag = LESS_EQUALS;
         break;
       }
+      if(peek_char(lexer->file) == '<')
+      {
+        get_char(lexer->file);
+        str_size++;
+        str = (char *)realloc(str, str_size * sizeof(char));
+        str[str_size - 1] = '\0';
+        str[str_size - 2] = '<';
+        *tag = DOUBLE_GREATER;
+        break;
+      }
       *tag = LESS;
       break;
     case '>':
@@ -65,7 +75,23 @@ namespace Lexer
         *tag = GREATER_EQUALS;
         break;
       }
+      if(peek_char(lexer->file) == '>')
+      {
+        get_char(lexer->file);
+        str_size++;
+        str = (char *)realloc(str, str_size * sizeof(char));
+        str[str_size - 1] = '\0';
+        str[str_size - 2] = '>';
+        *tag = DOUBLE_GREATER;
+        break;
+      }
       *tag = GREATER;
+      break;
+    case '^':
+      *tag = L_XOR;
+      break;
+    case '%':
+      *tag = PERCENT;
       break;
     case '-':
     {

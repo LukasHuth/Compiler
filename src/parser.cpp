@@ -323,7 +323,24 @@ namespace Parser
 
   bool is_binary_op(Lexer::Tag tag)
   {
-    return tag == Lexer::PLUS || tag == Lexer::MINUS || tag == Lexer::STAR || tag == Lexer::SLASH || tag == Lexer::EQUALS_EQUALS || tag == Lexer::BANG_EQUALS || tag == Lexer::LESS || tag == Lexer::GREATER || tag == Lexer::LESS_EQUALS || tag == Lexer::GREATER_EQUALS || tag == Lexer::L_AND || tag == Lexer::L_OR;
+    return (
+      tag == Lexer::PLUS ||
+      tag == Lexer::MINUS ||
+      tag == Lexer::STAR ||
+      tag == Lexer::SLASH ||
+      tag == Lexer::EQUALS_EQUALS ||
+      tag == Lexer::BANG_EQUALS ||
+      tag == Lexer::LESS ||
+      tag == Lexer::GREATER || 
+      tag == Lexer::LESS_EQUALS ||
+      tag == Lexer::GREATER_EQUALS ||
+      tag == Lexer::L_AND ||
+      tag == Lexer::L_OR ||
+      tag == Lexer::L_XOR ||
+      tag == Lexer::DOUBLE_GREATER ||
+      tag == Lexer::DOUBLE_LESS ||
+      tag == Lexer::PERCENT
+    );
   }
 
   AST *parse_term(Lexer::Lexer *lexer, AST *function)
